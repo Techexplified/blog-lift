@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* BlogLift brand accent — reference for custom CSS / inline styles */
+:root {
+  --bloglift-brand: #17a5b4;
+  --bloglift-brand-hover: #149db0;
+  --bloglift-brand-deep: #128a9c;
+}
+
+/* Use browser default root size (16px) so the UI scales naturally
+   and matches 100% zoom expectations both horizontally and vertically. */
+html {
+  font-size: 16px;
+}

@@ -1,0 +1,8 @@
+name = "React Router"
+roles = ["frontend", "backend"]
+webhooks_path = "/webhooks/app/uninstalled"
+
+[commands]
+# Sessions use in-memory storage by default (no DB). `prisma generate` is still needed for SEO routes that use `prisma.post` later.
+predev = "node ./scripts/run-with-shopify-env.mjs npx prisma generate"
+dev = "npm exec react-router dev"

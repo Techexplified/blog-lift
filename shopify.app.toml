@@ -1,0 +1,37 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+#
+# When production URL changes: set `application_url` and every entry under [auth].redirect_urls
+# to the SAME origin as `SHOPIFY_APP_URL` on your host (no trailing slash). Then `shopify app deploy`.
+
+client_id = "9014b094e147c1982fe60eedf74b01ac"
+name = "BlogLift"
+# NOTE: `application_url` must be a real, reachable HTTPS URL in production.
+# Keeping this aligned prevents OAuth/redirect failures during review.
+application_url = "https://seo-optimizer-app.vercel.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2026-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_content,read_products,write_content,write_files,write_products"
+
+[auth]
+redirect_urls = [
+  "https://seo-optimizer-app.vercel.app/api/auth",
+  "https://seo-optimizer-app.vercel.app/api/auth/callback",
+  "https://seo-optimizer-app.vercel.app/auth/callback"
+]
