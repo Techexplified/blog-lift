@@ -7,7 +7,7 @@ client_id = "9014b094e147c1982fe60eedf74b01ac"
 name = "BlogLift"
 # NOTE: `application_url` must be a real, reachable HTTPS URL in production.
 # Keeping this aligned prevents OAuth/redirect failures during review.
-application_url = "https://seo-optimizer-app.vercel.app"
+application_url = "https://blog-lift.vercel.app"
 embedded = true
 
 [build]
@@ -31,7 +31,7 @@ scopes = "read_content,read_products,write_content,write_files,write_products"
 
 [auth]
 redirect_urls = [
-  "https://seo-optimizer-app.vercel.app/api/auth",
-  "https://seo-optimizer-app.vercel.app/api/auth/callback",
-  "https://seo-optimizer-app.vercel.app/auth/callback"
+  "https://blog-lift.vercel.app/api/auth",
+  "https://blog-lift.vercel.app/api/auth/callback",
+  "https://blog-lift.vercel.app/auth/callback"
 ]

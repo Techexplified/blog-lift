@@ -5,7 +5,7 @@
 
 client_id = "4303a2e7d559c86b96bbb6e80d51a4aa"
 name = "BlogLift"
-application_url = "https://seo-optimizer-app.vercel.app"
+application_url = "https://blog-lift.vercel.app"
 embedded = true
 
 [webhooks]
@@ -29,9 +29,9 @@ scopes = "read_content,read_products,write_content,write_files,write_products"
 
 [auth]
 redirect_urls = [
-  "https://seo-optimizer-app.vercel.app/api/auth",
-  "https://seo-optimizer-app.vercel.app/api/auth/callback",
-  "https://seo-optimizer-app.vercel.app/auth/callback"
+  "https://blog-lift.vercel.app/api/auth",
+  "https://blog-lift.vercel.app/api/auth/callback",
+  "https://blog-lift.vercel.app/auth/callback"
 ]
 
 [build]
