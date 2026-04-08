@@ -123,10 +123,12 @@ function computeSeo({ title, keyword, bodyText, hasH2 }) {
 }
 
 function seoLabel(s) {
-  if (s >= 75) return { text: "Good", className: "bg-emerald-100 text-emerald-800" };
-  if (s >= 50)
-    return { text: "OK", className: "bg-amber-100 text-amber-800" };
-  return { text: "Low", className: "bg-rose-100 text-rose-800" };
+  const n = Number(s) || 0;
+  if (n < 25) return { text: "Low", className: "bg-rose-100 text-rose-800" };
+  if (n < 50)
+    return { text: "Average", className: "bg-amber-100 text-amber-800" };
+  if (n < 75) return { text: "Good", className: "bg-emerald-100 text-emerald-800" };
+  return { text: "Great", className: "bg-sky-100 text-sky-800" };
 }
 
 const GEN_TONES = ["Professional", "Casual", "Friendly", "Authoritative"];
