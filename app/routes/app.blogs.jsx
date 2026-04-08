@@ -194,12 +194,20 @@ export default function BlogsPage() {
   };
 
   /* ------------------------------------------ */
-  /* Extract text from Markdown         */
+  /* Extract readable excerpt text      */
   /* ------------------------------------------ */
 
   const getExcerpt = (text) => {
-    const plain = text.replace(/[#_*`>-]/g, ""); // remove markdown symbols
-    return plain.length > 180 ? plain.slice(0, 180) + "..." : plain;
+    const plain = String(text || "")
+      // remove HTML tags like <p>, <h1>, etc.
+      .replace(/<[^>]*>/g, " ")
+      // remove common markdown symbols
+      .replace(/[#_*`>-]/g, " ")
+      // normalize whitespace
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return plain.length > 180 ? `${plain.slice(0, 180)}...` : plain;
   };
 
   // Function to determine if a link is active (for the Blog page, it is /app/seo)
