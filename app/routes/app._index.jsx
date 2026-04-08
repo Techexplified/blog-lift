@@ -102,7 +102,8 @@ export default function Index() {
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       marginBottom: "20px",
-      lineHeight: "1.1",
+      lineHeight: "1.2",
+      paddingBottom: "0.12em",
     },
     subtitle: {
       fontSize: "17px",

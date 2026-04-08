@@ -68,39 +68,60 @@ export default function BlogsPage() {
       background: "linear-gradient(135deg, #0f172a 0%, #17a5b4 100%)",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
-      lineHeight: "1.1",
+      lineHeight: "1.2",
+      paddingBottom: "0.12em",
     },
 
-    // --- CARD GRID ---
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-      gap: "20px",
+    // --- WORDPRESS-LIKE LIST ---
+    list: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
       width: "100%",
+      margin: "0 auto",
+      padding: "0",
     },
 
-    card: {
+    row: {
       background: "white",
-      padding: "18px",
+      padding: "16px 18px",
       borderRadius: "12px",
       border: "1px solid #e2e8f0",
       boxShadow: "0 6px 15px rgba(0,0,0,0.08)", // Softer shadow
       transition: "all 0.3s ease",
       cursor: "pointer",
       outline: "none",
-      // Ensure the card style is the default
       transform: "translateY(0)",
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: "16px",
+      width: "100%",
     },
 
-    cardHover: {
+    rowHover: {
       transform: "translateY(-5px)", // More noticeable lift
       boxShadow: "0 15px 30px rgba(0,0,0,0.15)",
+    },
+
+    rowMain: {
+      minWidth: 0,
+      flex: "1 1 auto",
+    },
+
+    rowMeta: {
+      flex: "0 0 auto",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+      gap: "10px",
+      minWidth: "160px",
     },
 
     titleText: {
       fontSize: "22px",
       fontWeight: 700,
-      marginBottom: "12px",
+      marginBottom: "8px",
       color: "#0f172a",
       lineHeight: 1.3,
       // Ensure text is not truncated by Admin styles
@@ -113,7 +134,7 @@ export default function BlogsPage() {
       fontSize: "14px",
       fontWeight: 600,
       color: "#17a5b4", // Brand accent
-      marginBottom: "10px",
+      marginBottom: "8px",
     },
     score: {
       display: "inline-block",
@@ -123,11 +144,10 @@ export default function BlogsPage() {
       borderRadius: "20px", // Pill shape
       fontSize: "13px",
       fontWeight: 700,
-      marginBottom: "16px",
       textTransform: "uppercase",
     },
     excerpt: {
-      marginTop: "10px",
+      marginTop: "6px",
       fontSize: "15px", // Slightly larger font
       lineHeight: "1.6",
       color: "#475569",
@@ -232,11 +252,11 @@ export default function BlogsPage() {
         ) : posts.length === 0 ? (
           <div style={styles.loading}>No blog posts found. Start creating!</div>
         ) : (
-          <div style={styles.grid}>
+          <div style={styles.list}>
             {posts.map((post) => (
               <div
                 key={post.id}
-                style={styles.card}
+                style={styles.row}
                 role="button"
                 tabIndex={0}
                 aria-label={`Open blog post: ${post.title}`}
@@ -248,24 +268,29 @@ export default function BlogsPage() {
                   navigate(`/app/blogsdetails/${post.id}`)
                 }
                 onMouseOver={(e) =>
-                  Object.assign(e.currentTarget.style, styles.cardHover)
+                  Object.assign(e.currentTarget.style, styles.rowHover)
                 }
                 onMouseOut={(e) =>
-                  Object.assign(e.currentTarget.style, styles.card)
+                  Object.assign(e.currentTarget.style, styles.row)
                 }
                 onFocus={(e) =>
-                  Object.assign(e.currentTarget.style, styles.cardHover)
+                  Object.assign(e.currentTarget.style, styles.rowHover)
                 }
                 onBlur={(e) =>
-                  Object.assign(e.currentTarget.style, styles.card)
+                  Object.assign(e.currentTarget.style, styles.row)
                 }
               >
-                <h3 style={styles.titleText}>{post.title}</h3>
-                <div style={styles.keyword}>Keyword: **{post.keyword}**</div>
-                <span style={styles.score}>
-                  SEO Score: {post.score || "N/A"}
-                </span>
-                <p style={styles.excerpt}>{getExcerpt(post.content)}</p>
+                <div style={styles.rowMain}>
+                  <h3 style={styles.titleText}>{post.title}</h3>
+                  <div style={styles.keyword}>Keyword: {post.keyword}</div>
+                  <p style={styles.excerpt}>{getExcerpt(post.content)}</p>
+                </div>
+
+                <div style={styles.rowMeta}>
+                  <span style={styles.score}>
+                    SEO Score: {post.score || "N/A"}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

@@ -10,7 +10,6 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import {
-  PenTool,
   Search,
   Bell,
   FileText,
@@ -309,19 +308,8 @@ export default function DashboardPage() {
     >
       <header className="border-b border-slate-200/80 bg-white">
         <div className="flex w-full items-center gap-3 px-5 py-2.5 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 flex-shrink-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#17a5b4] text-white shadow-sm ring-4 ring-[#17a5b4]/15">
-              <PenTool className="size-4" strokeWidth={2.2} />
-            </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-base font-semibold tracking-tight text-slate-900">
-                BlogLift
-              </span>
-              <span className="hidden shrink-0 rounded-full bg-[#17a5b4]/10 px-2.5 py-0.5 text-xs font-medium text-[#115960] sm:inline">
-                for Shopify
-              </span>
-            </div>
-          </div>
+          {/* Spacer keeps the search centered like before (without the brand block). */}
+          <div className="hidden w-[210px] flex-shrink-0 md:block" aria-hidden />
 
           <div className="mx-auto hidden min-w-0 max-w-xl flex-1 md:block">
             <form

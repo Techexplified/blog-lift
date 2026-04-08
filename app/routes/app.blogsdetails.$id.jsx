@@ -29,6 +29,22 @@ export default function BlogDetailPage() {
 
   if (!post) return <div>No post data found in component.</div>;
 
+  const sanitizeHtml = (html) => {
+    if (!html) return "";
+
+    // Lightweight sanitizer to prevent obvious XSS vectors for stored post HTML.
+    // If you later need richer HTML support, swap this for a vetted sanitizer library.
+    return String(html)
+      .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "")
+      .replace(/<\s*style[^>]*>[\s\S]*?<\s*\/\s*style\s*>/gi, "")
+      .replace(/\son\w+="[^"]*"/gi, "")
+      .replace(/\son\w+='[^']*'/gi, "")
+      .replace(
+        /\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi,
+        ' $1="#"',
+      );
+  };
+
   const styles = {
     mainWrapper: {
       minHeight: "100vh",
@@ -116,12 +132,15 @@ export default function BlogDetailPage() {
       fontSize: "16px",
       lineHeight: "1.75",
       color: "#334155",
-      whiteSpace: "pre-wrap",
       backgroundColor: "white",
       padding: "28px",
       borderRadius: "12px",
       border: "1px solid #e2e8f0",
       boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+    },
+
+    articleContent: {
+      wordBreak: "break-word",
     },
 
     badgeRow: {
@@ -169,7 +188,12 @@ export default function BlogDetailPage() {
           <span style={styles.badgeKeyword}>Keyword: {post.keyword}</span>
         </div>
 
-        <article style={styles.article}>{post.content}</article>
+        <article style={styles.article}>
+          <div
+            style={styles.articleContent}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
+          />
+        </article>
       </div>
     </div>
   );
