@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -16,6 +17,24 @@ export const action = async ({ request }) => {
 export default function Index() {
   const shopify = useAppBridge();
   const navigate = useNavigate();
+  const [canShowLanding, setCanShowLanding] = useState(false);
+
+  useEffect(() => {
+    // Only show landing once per browser (per store admin session).
+    try {
+      const key = "bloglift_seen_landing_v1";
+      const seen = localStorage.getItem(key) === "1";
+      if (seen) {
+        navigate("/app/dashboard", { replace: true });
+      } else {
+        localStorage.setItem(key, "1");
+        setCanShowLanding(true);
+      }
+    } catch {
+      // If storage is blocked, fall back to always showing landing.
+      setCanShowLanding(true);
+    }
+  }, [navigate]);
 
   const styles = {
     // --- LAYOUT & CONTAINER STYLES ---
@@ -157,6 +176,8 @@ export default function Index() {
     shopify.toast.show("Redirecting to Blog setup...");
     navigate("/app/dashboard");
   };
+
+  if (!canShowLanding) return null;
 
   return (
     <div style={styles.mainWrapper}>
