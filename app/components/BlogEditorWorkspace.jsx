@@ -196,6 +196,9 @@ export default function BlogEditorWorkspace({
   source = "bloglift",
 }) {
   const [draftId, setDraftId] = useState(() => initialDraft?.id ?? null);
+  const isRemoteShopify =
+    source === "shopify" ||
+    (typeof draftId === "string" && draftId.startsWith("gid://shopify/Article/"));
   const [title, setTitle] = useState("Untitled post");
   const [primaryKeyword, setPrimaryKeyword] = useState("keyword");
   const [lastSaved, setLastSaved] = useState(null);
@@ -225,6 +228,36 @@ export default function BlogEditorWorkspace({
   const [genWordTarget, setGenWordTarget] = useState(500);
   const [genOutlinePreview, setGenOutlinePreview] = useState("");
   const [outlineOpen, setOutlineOpen] = useState(true);
+
+  const [availableBlogs, setAvailableBlogs] = useState([]);
+  const [targetBlogId, setTargetBlogId] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadBlogs = async () => {
+      try {
+        const res = await fetch("/api/shopify/blogs");
+        const data = await res.json();
+        const blogs =
+          (Array.isArray(data) ? data : [])
+            .map((edge) => ({
+              id: edge?.node?.id,
+              title: edge?.node?.title || "Blog",
+            }))
+            .filter((b) => !!b.id) || [];
+        if (cancelled) return;
+        setAvailableBlogs(blogs);
+        setTargetBlogId((prev) => prev || blogs?.[0]?.id || "");
+      } catch {
+        if (cancelled) return;
+        setAvailableBlogs([]);
+      }
+    };
+    void loadBlogs();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -484,7 +517,7 @@ export default function BlogEditorWorkspace({
 
       setRemoteSaving(true);
       try {
-        if (source === "shopify") {
+        if (isRemoteShopify) {
           const res = await fetch("/api/shopify/article-update", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -546,7 +579,7 @@ export default function BlogEditorWorkspace({
       draftId,
       openrouterKey,
       aiSeo,
-      source,
+      isRemoteShopify,
       tags,
     ],
   );
@@ -830,17 +863,47 @@ export default function BlogEditorWorkspace({
   };
 
   const publish = () => {
-    if (source === "shopify") {
+    if (isRemoteShopify) {
       if (!window.confirm("Publish this post to Shopify?")) return;
-    } else {
-      if (
-        !window.confirm(
-          "Mark this post as published in BlogLift? (Shopify sync is separate.)",
-        )
-      )
-        return;
+      void persistDraft(true);
+      return;
     }
-    void persistDraft(true);
+
+    if (!window.confirm("Publish this post to Shopify?")) return;
+    const bodyHtml = bodyRef.current?.innerHTML || "";
+    if (!targetBlogId) {
+      setNotice("No Shopify blog found to publish into");
+      setTimeout(() => setNotice(null), 2500);
+      return;
+    }
+
+    void (async () => {
+      setRemoteSaving(true);
+      try {
+        const res = await fetch("/api/shopify/article-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blogId: targetBlogId,
+            title,
+            bodyHtml,
+            tags,
+            isPublished: true,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Shopify publish failed");
+        if (data?.article?.id) setDraftId(data.article.id);
+        setPublished(true);
+        setLastSaved(new Date().toISOString());
+        setNotice("Published to Shopify");
+      } catch (e) {
+        setNotice(e.message || "Shopify publish failed");
+      } finally {
+        setRemoteSaving(false);
+        setTimeout(() => setNotice(null), 3200);
+      }
+    })();
   };
 
   /** Run format on pointer down (after preventDefault) so selection stays in the editor. */

@@ -196,7 +196,7 @@ export default function Index() {
         <div>
           <div style={styles.badge}>AI-Powered Content Creation</div>
 
-          <h1 style={styles.title}>Blog lift</h1>
+          <h1 style={styles.title}>Blog Lift</h1>
 
           <p style={styles.subtitle}>
             Transform your Shopify store with intelligent, SEO-rich blog posts.
