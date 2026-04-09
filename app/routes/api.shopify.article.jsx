@@ -20,7 +20,7 @@ export async function loader({ request }) {
         body
         tags
         isPublished
-        metafields(first: 10, namespace: "global") {
+        metafields(first: 20, namespace: "seo") {
           edges {
             node {
               key
@@ -79,6 +79,7 @@ export async function loader({ request }) {
     tags: article.tags,
     seoTitle,
     seoDescription,
+    isPublished: !!article.isPublished,
     visibility: article.isPublished ? "Visible" : "Hidden",
     publishedAt: article.publishedAt,
   });

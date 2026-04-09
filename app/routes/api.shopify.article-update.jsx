@@ -6,7 +6,15 @@ export const action = async ({ request }) => {
 
   // Determine publication status
   // If isPublished is true, we set the date to now. If false, we null it to hide it.
-  // const publishedAt = data.isPublished ? new Date().toISOString() : null;
+  const publishedAt =
+    typeof data.isPublished === "boolean"
+      ? data.isPublished
+        ? new Date().toISOString()
+        : null
+      : undefined;
+
+  const shouldWriteSeoMetafields =
+    typeof data.seoTitle === "string" || typeof data.seoDescription === "string";
 
   const response = await admin.graphql(
     `#graphql
@@ -29,24 +37,34 @@ export const action = async ({ request }) => {
         article: {
           title: data.title,
           body: data.bodyHtml,
-          tags: data.tags,
-          // Visibility toggle
-          // publishedAt: publishedAt,
-          // SEO Metadata via Metafields
-          metafields: [
-            {
-              namespace: "seo",
-              key: "title_tag",
-              value: data.seoTitle,
-              type: "single_line_text_field",
-            },
-            {
-              namespace: "seo",
-              key: "description_tag",
-              value: data.seoDescription,
-              type: "multi_line_text_field",
-            },
-          ],
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          ...(publishedAt !== undefined ? { publishedAt } : {}),
+          ...(shouldWriteSeoMetafields
+            ? {
+                metafields: [
+                  ...(typeof data.seoTitle === "string"
+                    ? [
+                        {
+                          namespace: "seo",
+                          key: "title_tag",
+                          value: data.seoTitle,
+                          type: "single_line_text_field",
+                        },
+                      ]
+                    : []),
+                  ...(typeof data.seoDescription === "string"
+                    ? [
+                        {
+                          namespace: "seo",
+                          key: "description_tag",
+                          value: data.seoDescription,
+                          type: "multi_line_text_field",
+                        },
+                      ]
+                    : []),
+                ],
+              }
+            : {}),
         },
       },
     },

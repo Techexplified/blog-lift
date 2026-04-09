@@ -18,10 +18,34 @@ export default function BlogsPage() {
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        // You might need to adjust this API route based on your file structure
-        const res = await fetch("/api/seo/list?publishedOnly=1");
+        const res = await fetch("/api/shopify/blogs");
         const data = await res.json();
-        setPosts(data || []);
+
+        // Flatten Shopify blogs -> articles into a single list.
+        const flattened =
+          (Array.isArray(data) ? data : [])
+            .flatMap((edge) => {
+              const blog = edge?.node;
+              const blogTitle = blog?.title || "Blog";
+              const articles = blog?.articles?.edges || [];
+              return articles.map((a) => ({
+                id: a?.node?.id,
+                title: a?.node?.title || "Untitled",
+                tags: Array.isArray(a?.node?.tags) ? a.node.tags : [],
+                publishedAt: a?.node?.publishedAt || null,
+                blogTitle,
+              }));
+            })
+            .filter((x) => !!x.id) || [];
+
+        // Newest first (publishedAt desc; drafts/unknown last)
+        flattened.sort((a, b) => {
+          const ta = a.publishedAt ? Date.parse(a.publishedAt) : -1;
+          const tb = b.publishedAt ? Date.parse(b.publishedAt) : -1;
+          return tb - ta;
+        });
+
+        setPosts(flattened);
       } catch (err) {
         console.error("Cannot load posts:", err);
       } finally {
@@ -269,11 +293,11 @@ export default function BlogsPage() {
                 tabIndex={0}
                 aria-label={`Open blog post: ${post.title}`}
                 onClick={() => {
-                  navigate(`/app/blogsdetails/${post.id}`);
+                  navigate(`/app/editor?id=${encodeURIComponent(post.id)}`);
                 }}
                 onKeyDown={(e) =>
                   (e.key === "Enter" || e.key === " ") &&
-                  navigate(`/app/blogsdetails/${post.id}`)
+                  navigate(`/app/editor?id=${encodeURIComponent(post.id)}`)
                 }
                 onMouseOver={(e) =>
                   Object.assign(e.currentTarget.style, styles.rowHover)
@@ -290,14 +314,19 @@ export default function BlogsPage() {
               >
                 <div style={styles.rowMain}>
                   <h3 style={styles.titleText}>{post.title}</h3>
-                  <div style={styles.keyword}>Keyword: {post.keyword}</div>
-                  <p style={styles.excerpt}>{getExcerpt(post.content)}</p>
+                  <div style={styles.keyword}>
+                    {post.blogTitle}
+                    {post.publishedAt
+                      ? ` · Published ${new Date(post.publishedAt).toLocaleDateString()}`
+                      : " · Draft/Hidden"}
+                  </div>
+                  <p style={styles.excerpt}>
+                    Tags: {post.tags?.length ? post.tags.join(", ") : "—"}
+                  </p>
                 </div>
 
                 <div style={styles.rowMeta}>
-                  <span style={styles.score}>
-                    SEO Score: {post.score || "N/A"}
-                  </span>
+                  <span style={styles.score}>Shopify</span>
                 </div>
               </div>
             ))}

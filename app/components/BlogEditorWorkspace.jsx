@@ -190,12 +190,17 @@ function OutlinePreviewLines({ text }) {
 const INITIAL_BODY = `<h2>Section one</h2><p>Start writing here. Use the toolbar for basic formatting.</p><h3>Subsection</h3><p>More body text.</p><div class="editor-tip-block" style="border-left:4px solid ${BRAND};background:${BRAND_TIP_BG};padding:12px 14px;border-radius:0 8px 8px 0;margin:16px 0;"><div style="display:flex;gap:8px;align-items:flex-start;"><span style="font-size:18px;">💡</span><div contenteditable="true" style="flex:1;outline:none;min-height:1.2em;">Pro tip: add your primary keyword early in the post.</div></div></div><h2>Section two</h2><p>Another paragraph.</p>`;
 const EMPTY_BODY = "<p></p>";
 
-export default function BlogEditorWorkspace({ initialDraft = null, forceNew = false }) {
+export default function BlogEditorWorkspace({
+  initialDraft = null,
+  forceNew = false,
+  source = "bloglift",
+}) {
   const [draftId, setDraftId] = useState(() => initialDraft?.id ?? null);
   const [title, setTitle] = useState("Untitled post");
   const [primaryKeyword, setPrimaryKeyword] = useState("keyword");
   const [lastSaved, setLastSaved] = useState(null);
   const [published, setPublished] = useState(false);
+  const [tags, setTags] = useState([]);
   const [remoteSaving, setRemoteSaving] = useState(false);
   const [outline, setOutline] = useState([]);
   const [activeHeadingId, setActiveHeadingId] = useState(null);
@@ -250,6 +255,7 @@ export default function BlogEditorWorkspace({ initialDraft = null, forceNew = fa
       setTitle("Untitled post");
       setPrimaryKeyword("keyword");
       setPublished(false);
+      setTags([]);
       setLastSaved(null);
       el.innerHTML = EMPTY_BODY;
     } else if (initialDraft?.id) {
@@ -258,6 +264,7 @@ export default function BlogEditorWorkspace({ initialDraft = null, forceNew = fa
       setPrimaryKeyword(initialDraft.keyword?.trim() || "keyword");
       setPublished(!!initialDraft.published);
       setDraftId(initialDraft.id);
+      setTags(Array.isArray(initialDraft.tags) ? initialDraft.tags : []);
       setLastSaved(
         initialDraft.updatedAt
           ? new Date(initialDraft.updatedAt).toISOString()
@@ -477,31 +484,50 @@ export default function BlogEditorWorkspace({ initialDraft = null, forceNew = fa
 
       setRemoteSaving(true);
       try {
-        const res = await fetch("/api/seo/save", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: draftId,
-            title,
-            content: bodyHtml,
-            keyword: primaryKeyword,
-            score: scoreToSave,
-            published: pub,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Save failed");
-        if (data.id) setDraftId(data.id);
-        const iso =
-          data.updatedAt != null
-            ? new Date(data.updatedAt).toISOString()
-            : payload.lastSaved;
-        setLastSaved(iso);
-        setNotice(
-          pub
-            ? "Saved — marked published (visible on My Posts when published)"
-            : "Draft saved — appears on your dashboard",
-        );
+        if (source === "shopify") {
+          const res = await fetch("/api/shopify/article-update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: draftId,
+              title,
+              bodyHtml,
+              tags,
+              isPublished: pub,
+              // SEO metafields optional; only sent if filled elsewhere.
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Shopify save failed");
+          setLastSaved(new Date().toISOString());
+          setNotice(pub ? "Saved to Shopify — published" : "Saved to Shopify");
+        } else {
+          const res = await fetch("/api/seo/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: draftId,
+              title,
+              content: bodyHtml,
+              keyword: primaryKeyword,
+              score: scoreToSave,
+              published: pub,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Save failed");
+          if (data.id) setDraftId(data.id);
+          const iso =
+            data.updatedAt != null
+              ? new Date(data.updatedAt).toISOString()
+              : payload.lastSaved;
+          setLastSaved(iso);
+          setNotice(
+            pub
+              ? "Saved — marked published (visible on My Posts when published)"
+              : "Draft saved — appears on your dashboard",
+          );
+        }
       } catch (e) {
         setLastSaved(payload.lastSaved);
         setNotice(
@@ -520,6 +546,8 @@ export default function BlogEditorWorkspace({ initialDraft = null, forceNew = fa
       draftId,
       openrouterKey,
       aiSeo,
+      source,
+      tags,
     ],
   );
 
@@ -802,12 +830,16 @@ export default function BlogEditorWorkspace({ initialDraft = null, forceNew = fa
   };
 
   const publish = () => {
-    if (
-      !window.confirm(
-        "Mark this post as published in BlogLift? (Shopify sync is separate.)",
+    if (source === "shopify") {
+      if (!window.confirm("Publish this post to Shopify?")) return;
+    } else {
+      if (
+        !window.confirm(
+          "Mark this post as published in BlogLift? (Shopify sync is separate.)",
+        )
       )
-    )
-      return;
+        return;
+    }
     void persistDraft(true);
   };
 
