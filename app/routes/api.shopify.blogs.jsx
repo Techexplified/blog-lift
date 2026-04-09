@@ -6,13 +6,13 @@ export async function loader({ request }) {
 
     const response = await admin.graphql(`
   query {
-    blogs(first: 5) {
+    blogs(first: 50) {
       edges {
         node {
           id
           title
           handle
-          articles(first: 10) {
+          articles(first: 50) {
             edges {
               node {
                 id

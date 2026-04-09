@@ -39,7 +39,7 @@ export const action = async ({ request }) => {
             title: data.title,
             body: data.bodyHtml,
             tags: data.tags || [],
-            isPublished: true,
+            isPublished: typeof data.isPublished === "boolean" ? data.isPublished : true,
             author: {
               name: authorName,
             },

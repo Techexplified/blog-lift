@@ -88,6 +88,8 @@ export default function GoBlogApp() {
 
   const [userApiKey, setUserApiKey] = useState("");
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [availableBlogs, setAvailableBlogs] = useState([]);
+  const [targetBlogId, setTargetBlogId] = useState("");
 
   const [currentPost, setCurrentPost] = useState({
     id: null,
@@ -183,42 +185,58 @@ export default function GoBlogApp() {
   //   return data.url;
   // };
 
+  const reloadShopifyPosts = async () => {
+    const res = await fetch("/api/shopify/blogs");
+    const data = await res.json();
+
+    // Capture blog list for targeting new posts.
+    const blogs =
+      (Array.isArray(data) ? data : [])
+        .map((edge) => ({
+          id: edge?.node?.id,
+          title: edge?.node?.title || "Blog",
+        }))
+        .filter((b) => !!b.id) || [];
+    setAvailableBlogs(blogs);
+    if (!targetBlogId && blogs.length) setTargetBlogId(blogs[0].id);
+
+    const allArticles = (Array.isArray(data) ? data : []).flatMap((blogEdge) => {
+      const articles = blogEdge?.node?.articles?.edges || [];
+      return articles.map((articleEdge) => ({
+        ...articleEdge.node,
+        blogTitle: blogEdge?.node?.title, // e.g., "News"
+        blogId: blogEdge?.node?.id,
+      }));
+    });
+
+    setPosts(allArticles);
+
+    // Best-effort views fetch
+    try {
+      const ids = (allArticles || []).map((a) => a.id).filter(Boolean);
+      if (ids.length) {
+        const resViews = await fetch(
+          `/api/views/list?ids=${encodeURIComponent(ids.join(","))}`,
+        );
+        const dataViews = await resViews.json();
+        if (resViews.ok && dataViews && typeof dataViews === "object") {
+          setViewsById(dataViews);
+        } else {
+          setViewsById({});
+        }
+      } else {
+        setViewsById({});
+      }
+    } catch {
+      setViewsById({});
+    }
+  };
+
   useEffect(() => {
     const loadPosts = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/shopify/blogs");
-        const data = await res.json();
-
-        const allArticles = data.flatMap((blogEdge) => {
-          const articles = blogEdge.node.articles?.edges || [];
-
-          return articles.map((articleEdge) => ({
-            ...articleEdge.node,
-            blogTitle: blogEdge.node.title, // e.g., "News"
-            blogId: blogEdge.node.id,
-          }));
-        });
-
-        setPosts(allArticles);
-        try {
-          const ids = (allArticles || []).map((a) => a.id).filter(Boolean);
-          if (ids.length) {
-            const resViews = await fetch(
-              `/api/views/list?ids=${encodeURIComponent(ids.join(","))}`,
-            );
-            const dataViews = await resViews.json();
-            if (resViews.ok && dataViews && typeof dataViews === "object") {
-              setViewsById(dataViews);
-            } else {
-              setViewsById({});
-            }
-          } else {
-            setViewsById({});
-          }
-        } catch {
-          setViewsById({});
-        }
+        await reloadShopifyPosts();
       } catch (err) {
         console.error("Mapping Error:", err);
         setNotification("Cannot load posts");
@@ -387,7 +405,7 @@ export default function GoBlogApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: currentPost.id,
-          blogId: posts[0]?.blogId,
+          blogId: targetBlogId || availableBlogs?.[0]?.id,
           title: currentPost.title,
           bodyHtml: currentPost.content,
           tags: currentPost.keyword,
@@ -412,6 +430,8 @@ export default function GoBlogApp() {
         "success",
       );
 
+      // Immediately refresh list so the new post appears without a full page reload.
+      await reloadShopifyPosts();
       setActiveTab("posts");
     } catch (err) {
       showNotification(err.message, "error");
@@ -715,6 +735,29 @@ export default function GoBlogApp() {
 
         {/* Visibility Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <label
+            htmlFor="blogTarget"
+            className="text-xs font-semibold text-slate-500 uppercase"
+          >
+            Publish To Blog
+          </label>
+          <select
+            id="blogTarget"
+            value={targetBlogId}
+            onChange={(e) => setTargetBlogId(e.target.value)}
+            className="w-full mt-2 p-2 border rounded-lg bg-slate-50 outline-none"
+          >
+            {availableBlogs.length ? (
+              availableBlogs.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.title}
+                </option>
+              ))
+            ) : (
+              <option value="">No blogs found</option>
+            )}
+          </select>
+
           <label
             htmlFor="visibility"
             className="text-xs font-semibold text-slate-500 uppercase"
