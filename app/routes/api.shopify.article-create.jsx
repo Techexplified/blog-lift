@@ -17,6 +17,8 @@ export const action = async ({ request }) => {
 
     const data = await request.json();
 
+    console.log("create", data);
+
     const response = await admin.graphql(
       `#graphql
       mutation articleCreate($article: ArticleCreateInput!) {
@@ -39,7 +41,7 @@ export const action = async ({ request }) => {
             title: data.title,
             body: data.bodyHtml,
             tags: data.tags || [],
-            isPublished: typeof data.isPublished === "boolean" ? data.isPublished : true,
+            isPublished: true,
             author: {
               name: authorName,
             },

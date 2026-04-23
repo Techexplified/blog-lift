@@ -127,7 +127,8 @@ function seoLabel(s) {
   if (n < 25) return { text: "Low", className: "bg-rose-100 text-rose-800" };
   if (n < 50)
     return { text: "Average", className: "bg-amber-100 text-amber-800" };
-  if (n < 75) return { text: "Good", className: "bg-emerald-100 text-emerald-800" };
+  if (n < 75)
+    return { text: "Good", className: "bg-emerald-100 text-emerald-800" };
   return { text: "Great", className: "bg-sky-100 text-sky-800" };
 }
 
@@ -198,7 +199,8 @@ export default function BlogEditorWorkspace({
   const [draftId, setDraftId] = useState(() => initialDraft?.id ?? null);
   const isRemoteShopify =
     source === "shopify" ||
-    (typeof draftId === "string" && draftId.startsWith("gid://shopify/Article/"));
+    (typeof draftId === "string" &&
+      draftId.startsWith("gid://shopify/Article/"));
   const [title, setTitle] = useState("Untitled post");
   const [primaryKeyword, setPrimaryKeyword] = useState("keyword");
   const [lastSaved, setLastSaved] = useState(null);
@@ -303,8 +305,9 @@ export default function BlogEditorWorkspace({
           ? new Date(initialDraft.updatedAt).toISOString()
           : null,
       );
-      el.innerHTML =
-        initialDraft.content?.trim() ? initialDraft.content : INITIAL_BODY;
+      el.innerHTML = initialDraft.content?.trim()
+        ? initialDraft.content
+        : INITIAL_BODY;
     } else {
       try {
         const raw = localStorage.getItem(LS_KEY);
@@ -368,7 +371,7 @@ export default function BlogEditorWorkspace({
   }, [outline.length]);
 
   const bodyPlain = bodyRef.current?.innerText || "";
-  const hasH2 = (bodyRef.current?.querySelector("h2") != null);
+  const hasH2 = bodyRef.current?.querySelector("h2") != null;
   const fallbackSeoScore = useMemo(
     () =>
       computeSeo({
@@ -388,7 +391,7 @@ export default function BlogEditorWorkspace({
         tone: "warn",
         text: "Add primary keyword to the title",
       });
-    if (k && !(bodyPlain.toLowerCase().slice(0, 200).includes(k)))
+    if (k && !bodyPlain.toLowerCase().slice(0, 200).includes(k))
       tips.push({
         tone: "info",
         text: "Use keyword in the first paragraph",
@@ -407,9 +410,7 @@ export default function BlogEditorWorkspace({
   const badge = seoLabel(seoScore);
 
   const displayTips =
-    openrouterKey.trim() && aiSeo?.tips?.length
-      ? aiSeo.tips
-      : optimizationTips;
+    openrouterKey.trim() && aiSeo?.tips?.length ? aiSeo.tips : optimizationTips;
 
   const suggestedKeywords =
     openrouterKey.trim() && aiSeo?.suggestedKeywords?.length
@@ -525,8 +526,8 @@ export default function BlogEditorWorkspace({
               id: draftId,
               title,
               bodyHtml,
-              tags,
-              isPublished: pub,
+              tags: Array.isArray(tags) ? tags.join(", ") : tags,
+              isPublished: true,
               // SEO metafields optional; only sent if filled elsewhere.
             }),
           });
@@ -887,7 +888,7 @@ export default function BlogEditorWorkspace({
             blogId: targetBlogId,
             title,
             bodyHtml,
-            tags,
+            tags: Array.isArray(tags) ? tags.join(", ") : tags,
             isPublished: true,
           }),
         });
@@ -924,437 +925,445 @@ export default function BlogEditorWorkspace({
   return (
     <div className="flex min-h-[100dvh] flex-col bg-slate-100 p-2 text-slate-900 sm:p-3 md:p-4">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl">
-      {/* Top bar */}
-      <header className="flex shrink-0 flex-col border-b border-slate-100 bg-white">
-        <div className="flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 md:px-5">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900">
-              <span className="size-1.5 rounded-full bg-amber-500" />
-              {published ? "Published" : "Draft"}
-            </span>
-          </div>
-          <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => setGenOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
-            >
-              <Sparkles className="size-3.5 text-[#17a5b4] sm:size-4" />
-              Generate with AI
-            </button>
-            <button
-              type="button"
-              disabled={remoteSaving}
-              onClick={() => void persistDraft()}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
-            >
-              {remoteSaving ? (
-                <Loader2 className="size-3.5 animate-spin sm:size-4" />
-              ) : (
-                <Save className="size-3.5 sm:size-4" />
-              )}
-              <span className="hidden sm:inline">
-                {remoteSaving ? "Saving…" : "Save Draft"}
+        {/* Top bar */}
+        <header className="flex shrink-0 flex-col border-b border-slate-100 bg-white">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 md:px-5">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {published ? "Published" : "Draft"}
               </span>
-              <span className="sm:hidden">
-                {remoteSaving ? "…" : "Save"}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={publish}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#17a5b4] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#149db0] sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
-            >
-              <Send className="size-3.5 sm:size-4" />
-              Publish
-            </button>
-          </div>
-        </div>
-        {/* AI + quick SEO stay visible on small screens (full sidebar is lg+ only) */}
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-2 py-2 sm:flex-row sm:items-start sm:gap-3 sm:px-3 md:px-5 lg:hidden">
-          <div
-            className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2 sm:border-b-0 sm:pb-0"
-            aria-label="SEO score summary"
-          >
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              SEO
-            </span>
-            <span className="text-sm font-bold text-slate-900">{seoScore}</span>
-            <span className="text-xs text-slate-400">/100</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
-            >
-              {badge.text}
-            </span>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              <Sparkles className="size-3.5 shrink-0 text-[#17a5b4]" />
-              AI actions
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
               <button
                 type="button"
-                disabled={!!aiBusy}
-                onClick={runImproveSeo}
-                className="rounded-lg bg-[#17a5b4] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#149db0] disabled:opacity-50 sm:text-xs"
+                onClick={() => setGenOpen(true)}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
               >
-                {aiBusy === "seo" ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  "Improve SEO"
-                )}
+                <Sparkles className="size-3.5 text-[#17a5b4] sm:size-4" />
+                Generate with AI
               </button>
-              {["rewrite", "expand", "simplify"].map((op) => (
+              <button
+                type="button"
+                disabled={remoteSaving}
+                onClick={() => void persistDraft()}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+              >
+                {remoteSaving ? (
+                  <Loader2 className="size-3.5 animate-spin sm:size-4" />
+                ) : (
+                  <Save className="size-3.5 sm:size-4" />
+                )}
+                <span className="hidden sm:inline">
+                  {remoteSaving ? "Saving…" : "Save Draft"}
+                </span>
+                <span className="sm:hidden">{remoteSaving ? "…" : "Save"}</span>
+              </button>
+              <button
+                type="button"
+                disabled={remoteSaving}
+                onClick={publish}
+                className="inline-flex items-center gap-1 rounded-lg bg-[#17a5b4] disabled:opacity-45 px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#149db0] sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+              >
+                <Send className="size-3.5 sm:size-4" />
+                Publish
+              </button>
+            </div>
+          </div>
+          {/* AI + quick SEO stay visible on small screens (full sidebar is lg+ only) */}
+          <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-2 py-2 sm:flex-row sm:items-start sm:gap-3 sm:px-3 md:px-5 lg:hidden">
+            <div
+              className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2 sm:border-b-0 sm:pb-0"
+              aria-label="SEO score summary"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                SEO
+              </span>
+              <span className="text-sm font-bold text-slate-900">
+                {seoScore}
+              </span>
+              <span className="text-xs text-slate-400">/100</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
+              >
+                {badge.text}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <Sparkles className="size-3.5 shrink-0 text-[#17a5b4]" />
+                AI actions
+              </div>
+              <div className="flex flex-wrap gap-1.5">
                 <button
-                  key={op}
                   type="button"
                   disabled={!!aiBusy}
-                  onClick={() => runTransform(op)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium capitalize text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:text-xs"
+                  onClick={runImproveSeo}
+                  className="rounded-lg bg-[#17a5b4] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#149db0] disabled:opacity-50 sm:text-xs"
                 >
-                  {aiBusy === op ? (
+                  {aiBusy === "seo" ? (
                     <Loader2 className="size-3.5 animate-spin" />
                   ) : (
-                    op
+                    "Improve SEO"
                   )}
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setShowKeyModal(true)}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-600 hover:bg-slate-50 sm:text-xs"
-              >
-                <KeyRound className="size-3" />
-                API key
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden bg-slate-100/95 p-1.5 sm:gap-2 sm:p-2 md:gap-3 md:p-3">
-        {/* Outline */}
-        <aside
-          className={`hidden shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-[width] duration-200 ease-out md:flex ${
-            outlineOpen ? "w-[13.5rem] sm:w-52" : "w-10 sm:w-11"
-          }`}
-        >
-          {outlineOpen ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setOutlineOpen(false)}
-                className="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-50"
-                aria-expanded={true}
-                title="Hide outline"
-              >
-                <Menu className="size-3.5 shrink-0" />
-                Outline
-              </button>
-              <nav className="min-h-0 flex-1 overflow-y-auto p-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    document
-                      .getElementById("editor-title-scroll-anchor")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  className={`mb-1 w-full rounded-md px-2 py-1.5 text-left text-sm font-semibold ${
-                    activeHeadingId === null
-                      ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  H1 · Title
-                </button>
-                {outline.map((item) => (
+                {["rewrite", "expand", "simplify"].map((op) => (
                   <button
-                    key={item.id}
+                    key={op}
                     type="button"
-                    onClick={() => scrollToHeading(item.id)}
-                    className={`mb-0.5 w-full rounded-md px-2 py-1.5 text-left text-sm ${
-                      item.level === "H2"
-                        ? "pl-2 font-medium"
-                        : "pl-4 text-slate-600"
-                    } ${
-                      activeHeadingId === item.id
-                        ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
-                        : "text-slate-700 hover:bg-white"
-                    }`}
+                    disabled={!!aiBusy}
+                    onClick={() => runTransform(op)}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium capitalize text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:text-xs"
                   >
-                    <span className="mr-1.5 text-[10px] font-bold text-slate-400">
-                      {item.level}
-                    </span>
-                    {item.text}
+                    {aiBusy === op ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      op
+                    )}
                   </button>
                 ))}
-              </nav>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setOutlineOpen(true)}
-              className="flex w-full flex-1 flex-col items-center py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-              aria-expanded={false}
-              title="Show outline"
-            >
-              <Menu className="size-4" />
-            </button>
-          )}
-        </aside>
-
-        {/* Editor column */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 text-xs text-slate-500 sm:px-4 sm:text-sm md:px-5">
-            <span>~ {wordCount} words</span>
-            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-              <ToolbarBtn title="Bold" onFormat={() => exec("bold")}>
-                <Bold className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn title="Italic" onFormat={() => exec("italic")}>
-                <Italic className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn title="Underline" onFormat={() => exec("underline")}>
-                <Underline className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn title="Link" onFormat={insertLink}>
-                <Link className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn title="Image" onFormat={insertImage}>
-                <Image className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn
-                title="Bullet list"
-                onFormat={() => exec("insertUnorderedList")}
-              >
-                <List className="size-4" />
-              </ToolbarBtn>
-              <ToolbarBtn title="Pro tip box" onFormat={insertTip}>
-                <Lightbulb className="size-4" />
-              </ToolbarBtn>
-            </div>
-          </div>
-          <div
-            ref={scrollMainRef}
-            className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-5 md:px-6"
-          >
-            <div id="editor-title-scroll-anchor" />
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mb-2 w-full border-0 bg-transparent text-2xl font-bold tracking-tight text-slate-900 outline-none focus:ring-0 sm:text-3xl"
-              placeholder="Title"
-            />
-            <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <span className="rounded-full bg-[#17a5b4]/10 px-2.5 py-0.5 text-xs font-medium text-[#115960]">
-                {primaryKeyword || "—"}
-              </span>
-              <span>
-                {lastSaved
-                  ? `Saved ${new Date(lastSaved).toLocaleString()}`
-                  : "Not saved yet"}
-              </span>
-            </div>
-            <div
-              ref={bodyRef}
-              contentEditable
-              suppressContentEditableWarning
-              className="max-w-none min-h-[240px] text-sm leading-relaxed text-slate-800 outline-none sm:min-h-[280px] sm:text-base [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-bold sm:[&_h2]:mt-8 sm:[&_h2]:text-xl [&_h3]:mt-3 [&_h3]:text-base [&_h3]:font-semibold sm:[&_h3]:mt-4 sm:[&_h3]:text-lg [&_p]:my-2 [&_p]:sm:my-3 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:sm:my-3 [&_ul]:sm:pl-6"
-              onInput={syncBody}
-              onBlur={syncBody}
-            />
-          </div>
-        </div>
-
-        {/* Right column: AI first (always visible), SEO + tips scroll below */}
-        <aside className="hidden w-[17.5rem] shrink-0 flex-col gap-2 self-stretch min-h-0 lg:flex xl:w-72">
-          <div className="shrink-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <Sparkles className="size-4 text-[#17a5b4]" />
-              AI actions
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={!!aiBusy}
-                onClick={runImproveSeo}
-                className="rounded-lg bg-[#17a5b4] px-2 py-2.5 text-center text-xs font-semibold text-white hover:bg-[#149db0] disabled:opacity-50"
-              >
-                {aiBusy === "seo" ? (
-                  <Loader2 className="mx-auto size-4 animate-spin" />
-                ) : (
-                  "Improve SEO"
-                )}
-              </button>
-              {["rewrite", "expand", "simplify"].map((op) => (
                 <button
-                  key={op}
                   type="button"
-                  disabled={!!aiBusy}
-                  onClick={() => runTransform(op)}
-                  className="rounded-lg border border-slate-200 bg-slate-50/80 px-2 py-2.5 text-center text-xs font-medium capitalize text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                  onClick={() => setShowKeyModal(true)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-600 hover:bg-slate-50 sm:text-xs"
                 >
-                  {aiBusy === op ? (
-                    <Loader2 className="mx-auto size-4 animate-spin" />
-                  ) : (
-                    op
-                  )}
+                  <KeyRound className="size-3" />
+                  API key
                 </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowKeyModal(true)}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs text-slate-600 hover:bg-slate-50"
-            >
-              <KeyRound className="size-3.5" />
-              API key
-            </button>
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              <div className="space-y-5">
-                <section aria-labelledby="seo-score-heading">
-                  <h2
-                    id="seo-score-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    SEO score
-                  </h2>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                      {seoScore}
-                    </span>
-                    <span className="text-slate-400">/100</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
-                    >
-                      {badge.text}
-                    </span>
-                  </div>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[#17a5b4] transition-all"
-                      style={{ width: `${seoScore}%` }}
-                    />
-                  </div>
-                  {openrouterKey.trim() && aiSeo && (
-                    <p className="mt-2 text-[10px] text-slate-400">
-                      Score and tips from AI (OpenRouter)
-                    </p>
-                  )}
-                  {openrouterKey.trim() && aiSeoLoading && (
-                    <p className="mt-1 text-[10px] text-slate-400">
-                      Updating SEO insight…
-                    </p>
-                  )}
-                  {aiSeoErr ? (
-                    <p className="mt-1 text-[10px] text-rose-600">{aiSeoErr}</p>
-                  ) : null}
-                </section>
-
-                <section
-                  className="border-t border-slate-100 pt-5"
-                  aria-labelledby="keyword-heading"
-                >
-                  <h2
-                    id="keyword-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    Keyword
-                  </h2>
-                  <input
-                    type="text"
-                    value={primaryKeyword}
-                    onChange={(e) => setPrimaryKeyword(e.target.value)}
-                    className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm outline-none ring-[#17a5b4]/30 focus:bg-white focus:ring-2"
-                    placeholder="Primary"
-                  />
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Suggested keywords
-                    </p>
-                    {openrouterKey.trim() ? (
-                      <button
-                        type="button"
-                        className="text-[10px] font-medium text-[#17a5b4] hover:underline"
-                        onClick={() => setAiSeoRefresh((n) => n + 1)}
-                      >
-                        Refresh
-                      </button>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {suggestedKeywords.map((kw) => (
-                      <button
-                        key={kw}
-                        type="button"
-                        onClick={() => setPrimaryKeyword(kw)}
-                        className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
-                      >
-                        {kw}
-                      </button>
-                    ))}
-                    {!openrouterKey.trim() ? (
-                      <span className="text-xs text-slate-400">
-                        Save an OpenRouter key in AI actions (above or in the
-                        header on smaller screens) for keywords that often rank
-                        in similar topics.
-                      </span>
-                    ) : null}
-                    {openrouterKey.trim() && aiSeo && suggestedKeywords.length ? (
-                      <p className="mt-1 w-full text-[10px] leading-snug text-slate-400">
-                        These keywords often rank on pages covering topics similar
-                        to yours (AI-suggested from your draft).
-                      </p>
-                    ) : null}
-                    {openrouterKey.trim() &&
-                    !suggestedKeywords.length &&
-                    !aiSeoLoading ? (
-                      <span className="text-xs text-slate-400">
-                        Suggested keywords appear after analysis finishes.
-                      </span>
-                    ) : null}
-                  </div>
-                </section>
-
-                <section
-                  className="border-t border-slate-100 pt-5"
-                  aria-labelledby="tips-heading"
-                >
-                  <h2
-                    id="tips-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    Tips
-                  </h2>
-                  <ul className="mt-2 space-y-2 text-sm">
-                    {displayTips.map((tip, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span
-                          className={
-                            tip.tone === "warn"
-                              ? "text-amber-500"
-                              : tip.tone === "ok"
-                                ? "text-emerald-500"
-                                : "text-slate-400"
-                          }
-                        >
-                          •
-                        </span>
-                        <span className="text-slate-700">{tip.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
               </div>
             </div>
           </div>
-        </aside>
-      </div>
+        </header>
+
+        <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden bg-slate-100/95 p-1.5 sm:gap-2 sm:p-2 md:gap-3 md:p-3">
+          {/* Outline */}
+          <aside
+            className={`hidden shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-[width] duration-200 ease-out md:flex ${
+              outlineOpen ? "w-[13.5rem] sm:w-52" : "w-10 sm:w-11"
+            }`}
+          >
+            {outlineOpen ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setOutlineOpen(false)}
+                  className="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-50"
+                  aria-expanded={true}
+                  title="Hide outline"
+                >
+                  <Menu className="size-3.5 shrink-0" />
+                  Outline
+                </button>
+                <nav className="min-h-0 flex-1 overflow-y-auto p-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document
+                        .getElementById("editor-title-scroll-anchor")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    className={`mb-1 w-full rounded-md px-2 py-1.5 text-left text-sm font-semibold ${
+                      activeHeadingId === null
+                        ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
+                        : "text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    H1 · Title
+                  </button>
+                  {outline.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => scrollToHeading(item.id)}
+                      className={`mb-0.5 w-full rounded-md px-2 py-1.5 text-left text-sm ${
+                        item.level === "H2"
+                          ? "pl-2 font-medium"
+                          : "pl-4 text-slate-600"
+                      } ${
+                        activeHeadingId === item.id
+                          ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
+                          : "text-slate-700 hover:bg-white"
+                      }`}
+                    >
+                      <span className="mr-1.5 text-[10px] font-bold text-slate-400">
+                        {item.level}
+                      </span>
+                      {item.text}
+                    </button>
+                  ))}
+                </nav>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setOutlineOpen(true)}
+                className="flex w-full flex-1 flex-col items-center py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                aria-expanded={false}
+                title="Show outline"
+              >
+                <Menu className="size-4" />
+              </button>
+            )}
+          </aside>
+
+          {/* Editor column */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 text-xs text-slate-500 sm:px-4 sm:text-sm md:px-5">
+              <span>~ {wordCount} words</span>
+              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                <ToolbarBtn title="Bold" onFormat={() => exec("bold")}>
+                  <Bold className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn title="Italic" onFormat={() => exec("italic")}>
+                  <Italic className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn
+                  title="Underline"
+                  onFormat={() => exec("underline")}
+                >
+                  <Underline className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn title="Link" onFormat={insertLink}>
+                  <Link className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn title="Image" onFormat={insertImage}>
+                  <Image className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn
+                  title="Bullet list"
+                  onFormat={() => exec("insertUnorderedList")}
+                >
+                  <List className="size-4" />
+                </ToolbarBtn>
+                <ToolbarBtn title="Pro tip box" onFormat={insertTip}>
+                  <Lightbulb className="size-4" />
+                </ToolbarBtn>
+              </div>
+            </div>
+            <div
+              ref={scrollMainRef}
+              className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-5 md:px-6"
+            >
+              <div id="editor-title-scroll-anchor" />
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="mb-2 w-full border-0 bg-transparent text-2xl font-bold tracking-tight text-slate-900 outline-none focus:ring-0 sm:text-3xl"
+                placeholder="Title"
+              />
+              <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <span className="rounded-full bg-[#17a5b4]/10 px-2.5 py-0.5 text-xs font-medium text-[#115960]">
+                  {primaryKeyword || "—"}
+                </span>
+                <span>
+                  {lastSaved
+                    ? `Saved ${new Date(lastSaved).toLocaleString()}`
+                    : "Not saved yet"}
+                </span>
+              </div>
+              <div
+                ref={bodyRef}
+                contentEditable
+                suppressContentEditableWarning
+                className="max-w-none min-h-[240px] text-sm leading-relaxed text-slate-800 outline-none sm:min-h-[280px] sm:text-base [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-bold sm:[&_h2]:mt-8 sm:[&_h2]:text-xl [&_h3]:mt-3 [&_h3]:text-base [&_h3]:font-semibold sm:[&_h3]:mt-4 sm:[&_h3]:text-lg [&_p]:my-2 [&_p]:sm:my-3 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:sm:my-3 [&_ul]:sm:pl-6"
+                onInput={syncBody}
+                onBlur={syncBody}
+              />
+            </div>
+          </div>
+
+          {/* Right column: AI first (always visible), SEO + tips scroll below */}
+          <aside className="hidden w-[17.5rem] shrink-0 flex-col gap-2 self-stretch min-h-0 lg:flex xl:w-72">
+            <div className="shrink-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <Sparkles className="size-4 text-[#17a5b4]" />
+                AI actions
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={!!aiBusy}
+                  onClick={runImproveSeo}
+                  className="rounded-lg bg-[#17a5b4] px-2 py-2.5 text-center text-xs font-semibold text-white hover:bg-[#149db0] disabled:opacity-50"
+                >
+                  {aiBusy === "seo" ? (
+                    <Loader2 className="mx-auto size-4 animate-spin" />
+                  ) : (
+                    "Improve SEO"
+                  )}
+                </button>
+                {["rewrite", "expand", "simplify"].map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    disabled={!!aiBusy}
+                    onClick={() => runTransform(op)}
+                    className="rounded-lg border border-slate-200 bg-slate-50/80 px-2 py-2.5 text-center text-xs font-medium capitalize text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    {aiBusy === op ? (
+                      <Loader2 className="mx-auto size-4 animate-spin" />
+                    ) : (
+                      op
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKeyModal(true)}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                <KeyRound className="size-3.5" />
+                API key
+              </button>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <div className="space-y-5">
+                  <section aria-labelledby="seo-score-heading">
+                    <h2
+                      id="seo-score-heading"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      SEO score
+                    </h2>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                        {seoScore}
+                      </span>
+                      <span className="text-slate-400">/100</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+                      >
+                        {badge.text}
+                      </span>
+                    </div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-[#17a5b4] transition-all"
+                        style={{ width: `${seoScore}%` }}
+                      />
+                    </div>
+                    {openrouterKey.trim() && aiSeo && (
+                      <p className="mt-2 text-[10px] text-slate-400">
+                        Score and tips from AI (OpenRouter)
+                      </p>
+                    )}
+                    {openrouterKey.trim() && aiSeoLoading && (
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        Updating SEO insight…
+                      </p>
+                    )}
+                    {aiSeoErr ? (
+                      <p className="mt-1 text-[10px] text-rose-600">
+                        {aiSeoErr}
+                      </p>
+                    ) : null}
+                  </section>
+
+                  <section
+                    className="border-t border-slate-100 pt-5"
+                    aria-labelledby="keyword-heading"
+                  >
+                    <h2
+                      id="keyword-heading"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      Keyword
+                    </h2>
+                    <input
+                      type="text"
+                      value={primaryKeyword}
+                      onChange={(e) => setPrimaryKeyword(e.target.value)}
+                      className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm outline-none ring-[#17a5b4]/30 focus:bg-white focus:ring-2"
+                      placeholder="Primary"
+                    />
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Suggested keywords
+                      </p>
+                      {openrouterKey.trim() ? (
+                        <button
+                          type="button"
+                          className="text-[10px] font-medium text-[#17a5b4] hover:underline"
+                          onClick={() => setAiSeoRefresh((n) => n + 1)}
+                        >
+                          Refresh
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {suggestedKeywords.map((kw) => (
+                        <button
+                          key={kw}
+                          type="button"
+                          onClick={() => setPrimaryKeyword(kw)}
+                          className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
+                        >
+                          {kw}
+                        </button>
+                      ))}
+                      {!openrouterKey.trim() ? (
+                        <span className="text-xs text-slate-400">
+                          Save an OpenRouter key in AI actions (above or in the
+                          header on smaller screens) for keywords that often
+                          rank in similar topics.
+                        </span>
+                      ) : null}
+                      {openrouterKey.trim() &&
+                      aiSeo &&
+                      suggestedKeywords.length ? (
+                        <p className="mt-1 w-full text-[10px] leading-snug text-slate-400">
+                          These keywords often rank on pages covering topics
+                          similar to yours (AI-suggested from your draft).
+                        </p>
+                      ) : null}
+                      {openrouterKey.trim() &&
+                      !suggestedKeywords.length &&
+                      !aiSeoLoading ? (
+                        <span className="text-xs text-slate-400">
+                          Suggested keywords appear after analysis finishes.
+                        </span>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  <section
+                    className="border-t border-slate-100 pt-5"
+                    aria-labelledby="tips-heading"
+                  >
+                    <h2
+                      id="tips-heading"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      Tips
+                    </h2>
+                    <ul className="mt-2 space-y-2 text-sm">
+                      {displayTips.map((tip, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span
+                            className={
+                              tip.tone === "warn"
+                                ? "text-amber-500"
+                                : tip.tone === "ok"
+                                  ? "text-emerald-500"
+                                  : "text-slate-400"
+                            }
+                          >
+                            •
+                          </span>
+                          <span className="text-slate-700">{tip.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       {notice && (
@@ -1367,7 +1376,9 @@ export default function BlogEditorWorkspace({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">OpenRouter API key</h3>
+              <h3 className="font-semibold text-slate-900">
+                OpenRouter API key
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowKeyModal(false)}
@@ -1448,15 +1459,15 @@ export default function BlogEditorWorkspace({
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
               <div className="space-y-5">
                 <div>
-              <label
-                htmlFor="gen-blog-topic"
-                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >
+                  <label
+                    htmlFor="gen-blog-topic"
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
                     <FileText className="size-3.5 text-slate-400" />
                     Blog topic
                   </label>
                   <input
-                id="gen-blog-topic"
+                    id="gen-blog-topic"
                     type="text"
                     value={genTopic}
                     onChange={(e) => setGenTopic(e.target.value)}
@@ -1567,8 +1578,9 @@ export default function BlogEditorWorkspace({
                       <OutlinePreviewLines text={genOutlinePreview} />
                     ) : (
                       <p className="text-sm leading-relaxed text-slate-400">
-                        Click &ldquo;Generate outline&rdquo; to preview your post
-                        structure, then paste the full article into the editor.
+                        Click &ldquo;Generate outline&rdquo; to preview your
+                        post structure, then paste the full article into the
+                        editor.
                       </p>
                     )}
                   </div>

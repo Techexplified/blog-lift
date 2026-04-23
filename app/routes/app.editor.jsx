@@ -1,8 +1,4 @@
-import {
-  useLoaderData,
-  useRouteError,
-  useSearchParams,
-} from "react-router";
+import { useLoaderData, useRouteError, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
@@ -19,7 +15,8 @@ export const loader = async ({ request }) => {
   }
 
   // Shopify article IDs are GIDs like: gid://shopify/Article/123
-  const isShopifyArticleId = typeof id === "string" && id.startsWith("gid://shopify/Article/");
+  const isShopifyArticleId =
+    typeof id === "string" && id.startsWith("gid://shopify/Article/");
 
   if (isShopifyArticleId) {
     try {
@@ -41,7 +38,8 @@ export const loader = async ({ request }) => {
 
       const json = await response.json();
       const article = json?.data?.article;
-      if (!article) return { initialDraft: null, isNew: false, source: "shopify" };
+      if (!article)
+        return { initialDraft: null, isNew: false, source: "shopify" };
 
       return {
         isNew: false,
@@ -76,6 +74,8 @@ export default function EditorRoute() {
   const { initialDraft, isNew, source } = useLoaderData();
   const [searchParams] = useSearchParams();
   const draftKey = isNew ? "new" : searchParams.get("id") || "new";
+
+  console.log({ initialDraft });
 
   return (
     <BlogEditorWorkspace

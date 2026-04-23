@@ -1,7 +1,4 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-#
-# When production URL changes: keep `application_url` + [auth].redirect_urls aligned with
-# `SHOPIFY_APP_URL` on Vercel (no trailing slash). New Shopify app ⇒ update `client_id` too.
 
 client_id = "4303a2e7d559c86b96bbb6e80d51a4aa"
 name = "BlogLift"
@@ -16,12 +13,12 @@ api_version = "2026-01"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
   [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes

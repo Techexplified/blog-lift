@@ -6,15 +6,12 @@ export const action = async ({ request }) => {
 
   // Determine publication status
   // If isPublished is true, we set the date to now. If false, we null it to hide it.
-  const publishedAt =
-    typeof data.isPublished === "boolean"
-      ? data.isPublished
-        ? new Date().toISOString()
-        : null
-      : undefined;
+  const isPublished =
+    typeof data.isPublished === "boolean" ? data.isPublished : undefined;
 
   const shouldWriteSeoMetafields =
-    typeof data.seoTitle === "string" || typeof data.seoDescription === "string";
+    typeof data.seoTitle === "string" ||
+    typeof data.seoDescription === "string";
 
   const response = await admin.graphql(
     `#graphql
@@ -38,7 +35,7 @@ export const action = async ({ request }) => {
           title: data.title,
           body: data.bodyHtml,
           tags: Array.isArray(data.tags) ? data.tags : [],
-          ...(publishedAt !== undefined ? { publishedAt } : {}),
+          ...(isPublished !== undefined ? { isPublished } : {}),
           ...(shouldWriteSeoMetafields
             ? {
                 metafields: [

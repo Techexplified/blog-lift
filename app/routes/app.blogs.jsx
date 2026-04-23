@@ -308,9 +308,7 @@ export default function BlogsPage() {
                 onFocus={(e) =>
                   Object.assign(e.currentTarget.style, styles.rowHover)
                 }
-                onBlur={(e) =>
-                  Object.assign(e.currentTarget.style, styles.row)
-                }
+                onBlur={(e) => Object.assign(e.currentTarget.style, styles.row)}
               >
                 <div style={styles.rowMain}>
                   <h3 style={styles.titleText}>{post.title}</h3>

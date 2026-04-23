@@ -200,14 +200,16 @@ export default function GoBlogApp() {
     setAvailableBlogs(blogs);
     if (!targetBlogId && blogs.length) setTargetBlogId(blogs[0].id);
 
-    const allArticles = (Array.isArray(data) ? data : []).flatMap((blogEdge) => {
-      const articles = blogEdge?.node?.articles?.edges || [];
-      return articles.map((articleEdge) => ({
-        ...articleEdge.node,
-        blogTitle: blogEdge?.node?.title, // e.g., "News"
-        blogId: blogEdge?.node?.id,
-      }));
-    });
+    const allArticles = (Array.isArray(data) ? data : []).flatMap(
+      (blogEdge) => {
+        const articles = blogEdge?.node?.articles?.edges || [];
+        return articles.map((articleEdge) => ({
+          ...articleEdge.node,
+          blogTitle: blogEdge?.node?.title, // e.g., "News"
+          blogId: blogEdge?.node?.id,
+        }));
+      },
+    );
 
     setPosts(allArticles);
 
@@ -984,7 +986,10 @@ export default function GoBlogApp() {
 
             {/* Topic */}
             <div className="space-y-1">
-              <label htmlFor="blog-topic" className="text-sm font-semibold text-slate-700">
+              <label
+                htmlFor="blog-topic"
+                className="text-sm font-semibold text-slate-700"
+              >
                 Blog Topic
               </label>
               <input
@@ -999,7 +1004,10 @@ export default function GoBlogApp() {
             <div className="grid grid-cols-2 gap-4">
               {/* Length */}
               <div className="space-y-1">
-                <label htmlFor="blog-length" className="text-sm font-semibold text-slate-700">
+                <label
+                  htmlFor="blog-length"
+                  className="text-sm font-semibold text-slate-700"
+                >
                   Length
                 </label>
                 <select
@@ -1016,7 +1024,10 @@ export default function GoBlogApp() {
 
               {/* Tone */}
               <div className="space-y-1">
-                <label htmlFor="blog-tone" className="text-sm font-semibold text-slate-700">
+                <label
+                  htmlFor="blog-tone"
+                  className="text-sm font-semibold text-slate-700"
+                >
                   Tone
                 </label>
                 <select
@@ -1035,7 +1046,10 @@ export default function GoBlogApp() {
 
             {/* SEO Keywords (Tag Input) */}
             <div className="space-y-2">
-              <label htmlFor="seo-keywords" className="text-sm font-semibold text-slate-700">
+              <label
+                htmlFor="seo-keywords"
+                className="text-sm font-semibold text-slate-700"
+              >
                 SEO Keywords
               </label>
               <div className="min-h-[48px] p-2 border border-slate-300 rounded-xl flex flex-wrap gap-2 items-center bg-slate-50 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#17a5b4]/35">
@@ -1110,7 +1124,10 @@ export default function GoBlogApp() {
 
             {/* Outline */}
             <div className="space-y-1">
-              <label htmlFor="blog-outline" className="text-sm font-semibold text-slate-700">
+              <label
+                htmlFor="blog-outline"
+                className="text-sm font-semibold text-slate-700"
+              >
                 Blog Outline (optional)
               </label>
               <textarea
