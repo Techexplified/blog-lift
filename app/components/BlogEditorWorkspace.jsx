@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import {
   Sparkles,
   Save,
@@ -17,7 +18,16 @@ import {
   FileText,
   Search,
   MessageSquare,
+  Link2,
+  ShoppingCart,
+  TrendingUp,
+  LayoutGrid,
+  Undo2,
+  Redo2,
+  Trash2,
+  CheckCircle2,
 } from "lucide-react";
+import ProductLinkerOverlay from "./ProductLinkerOverlay";
 
 const LS_KEY = "bloglift_editor_draft";
 const LS_OPENROUTER = "bloglift_openrouter_key";
@@ -26,7 +36,7 @@ const LS_GEMINI = "bloglift_gemini_key";
 
 /** Primary brand accent (shared with design). */
 const BRAND = "#17a5b4";
-const BRAND_TIP_BG = "#ecf8fa";
+const BRAND_TIP_BG = "rgba(23, 165, 180, 0.1)";
 
 function escapeHtml(s) {
   return String(s)
@@ -143,7 +153,7 @@ function wordTargetToLengthLabel(n) {
 function OutlinePreviewLines({ text }) {
   if (!text?.trim()) return null;
   return (
-    <div className="space-y-2 font-medium text-slate-800">
+    <div className="space-y-2 font-medium text-slate-800 dark:text-slate-100">
       {text.split("\n").map((line, i) => {
         const t = line.trim();
         if (!t) return null;
@@ -169,7 +179,7 @@ function OutlinePreviewLines({ text }) {
         }
         if (t.startsWith("### ")) {
           return (
-            <div key={i} className="flex gap-2 pl-4 text-sm text-slate-700">
+            <div key={i} className="flex gap-2 pl-4 text-sm text-slate-700 dark:text-slate-200">
               <span className="shrink-0 rounded bg-slate-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
                 H3
               </span>
@@ -178,7 +188,7 @@ function OutlinePreviewLines({ text }) {
           );
         }
         return (
-          <div key={i} className="pl-6 text-sm text-slate-600">
+          <div key={i} className="pl-6 text-sm text-slate-600 dark:text-slate-300">
             {t}
           </div>
         );
@@ -187,7 +197,7 @@ function OutlinePreviewLines({ text }) {
   );
 }
 
-const INITIAL_BODY = `<h2>Section one</h2><p>Start writing here. Use the toolbar for basic formatting.</p><h3>Subsection</h3><p>More body text.</p><div class="editor-tip-block" style="border-left:4px solid ${BRAND};background:${BRAND_TIP_BG};padding:12px 14px;border-radius:0 8px 8px 0;margin:16px 0;"><div style="display:flex;gap:8px;align-items:flex-start;"><span style="font-size:18px;">💡</span><div contenteditable="true" style="flex:1;outline:none;min-height:1.2em;">Pro tip: add your primary keyword early in the post.</div></div></div><h2>Section two</h2><p>Another paragraph.</p>`;
+const INITIAL_BODY = `<h2>Section one</h2><p>Start writing here. Use the toolbar for basic formatting.</p><h3>Subsection</h3><p>More body text.</p><div class="editor-tip-block"><div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-size:20px;filter:drop-shadow(0 0 8px rgba(23,165,180,0.4));">💡</span><div contenteditable="true" style="flex:1;outline:none;min-height:1.2em;font-weight:500;color:inherit;">Pro tip: add your primary keyword early in the post.</div></div></div><h2>Section two</h2><p>Another paragraph.</p>`;
 const EMPTY_BODY = "<p></p>";
 
 export default function BlogEditorWorkspace({
@@ -195,9 +205,10 @@ export default function BlogEditorWorkspace({
   forceNew = false,
   source = "bloglift",
 }) {
+  const navigate = useNavigate();
   const [draftId, setDraftId] = useState(() => initialDraft?.id ?? null);
   const isRemoteShopify =
-    source === "shopify" ||
+    (source === "shopify" && typeof draftId === "string" && draftId.startsWith("gid://")) ||
     (typeof draftId === "string" && draftId.startsWith("gid://shopify/Article/"));
   const [title, setTitle] = useState("Untitled post");
   const [primaryKeyword, setPrimaryKeyword] = useState("keyword");
@@ -228,6 +239,10 @@ export default function BlogEditorWorkspace({
   const [genWordTarget, setGenWordTarget] = useState(500);
   const [genOutlinePreview, setGenOutlinePreview] = useState("");
   const [outlineOpen, setOutlineOpen] = useState(true);
+  const [isProductLinkerOpen, setIsProductLinkerOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [isSyncingProducts, setIsSyncingProducts] = useState(false);
+  const [unlinkedMentions, setUnlinkedMentions] = useState([]);
 
   const [availableBlogs, setAvailableBlogs] = useState([]);
   const [targetBlogId, setTargetBlogId] = useState("");
@@ -237,6 +252,12 @@ export default function BlogEditorWorkspace({
     const loadBlogs = async () => {
       try {
         const res = await fetch("/api/shopify/blogs");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           const text = await res.text();
+           throw new Error(`Invalid response: ${text.slice(0, 50)}...`);
+        }
         const data = await res.json();
         const blogs =
           (Array.isArray(data) ? data : [])
@@ -248,8 +269,9 @@ export default function BlogEditorWorkspace({
         if (cancelled) return;
         setAvailableBlogs(blogs);
         setTargetBlogId((prev) => prev || blogs?.[0]?.id || "");
-      } catch {
+      } catch (e) {
         if (cancelled) return;
+        console.error("Failed to load blogs:", e);
         setAvailableBlogs([]);
       }
     };
@@ -257,6 +279,38 @@ export default function BlogEditorWorkspace({
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const syncProducts = async () => {
+    setIsSyncingProducts(true);
+    try {
+      const res = await fetch("/api/shopify/products");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+         throw new Error("Server returned non-JSON products data");
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setProducts(data);
+        localStorage.setItem("bloglift_products", JSON.stringify(data));
+      }
+    } catch (e) {
+      console.error("Sync failed", e);
+    } finally {
+      setIsSyncingProducts(false);
+    }
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("bloglift_products");
+    if (saved) {
+      try {
+        setProducts(JSON.parse(saved));
+      } catch (e) {}
+    } else {
+      void syncProducts();
+    }
   }, []);
 
   useEffect(() => {
@@ -285,12 +339,12 @@ export default function BlogEditorWorkspace({
     let initialTitle = "Untitled post";
     if (forceNew) {
       setDraftId(null);
-      setTitle("Untitled post");
-      setPrimaryKeyword("keyword");
+      setTitle(initialDraft?.title || "Untitled post");
+      setPrimaryKeyword(initialDraft?.keyword || "keyword");
       setPublished(false);
       setTags([]);
       setLastSaved(null);
-      el.innerHTML = EMPTY_BODY;
+      el.innerHTML = initialDraft?.content || EMPTY_BODY;
     } else if (initialDraft?.id) {
       initialTitle = initialDraft.title?.trim() || "Untitled post";
       setTitle(initialTitle);
@@ -305,6 +359,7 @@ export default function BlogEditorWorkspace({
       );
       el.innerHTML =
         initialDraft.content?.trim() ? initialDraft.content : INITIAL_BODY;
+      el.style.color = "var(--text-primary)";
     } else {
       try {
         const raw = localStorage.getItem(LS_KEY);
@@ -318,6 +373,7 @@ export default function BlogEditorWorkspace({
           if (d.lastSaved) setLastSaved(d.lastSaved);
           if (d.published) setPublished(!!d.published);
           el.innerHTML = d.bodyHtml || INITIAL_BODY;
+          el.style.color = "var(--text-primary)";
         } else {
           el.innerHTML = INITIAL_BODY;
         }
@@ -458,6 +514,10 @@ export default function BlogEditorWorkspace({
             hasH2: h2,
           }),
         });
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           throw new Error(`AI error: ${res.status}`);
+        }
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Request failed");
         setAiSeo({
@@ -486,7 +546,7 @@ export default function BlogEditorWorkspace({
   ]);
 
   const persistDraft = useCallback(
-    async (publishedOverride) => {
+    async (publishedOverride, isAutoSave = false) => {
       const bodyHtml = bodyRef.current?.innerHTML || "";
       const pub =
         publishedOverride !== undefined ? publishedOverride : published;
@@ -515,9 +575,10 @@ export default function BlogEditorWorkspace({
       const scoreToSave =
         openrouterKey.trim() && aiSeo != null ? aiSeo.score : heuristicScore;
 
-      setRemoteSaving(true);
+      if (!isAutoSave) setRemoteSaving(true);
       try {
-        if (isRemoteShopify) {
+        if (isRemoteShopify && publishedOverride !== undefined) {
+          // This is a "Publish" or "Update Post" action (intentional Shopify sync)
           const res = await fetch("/api/shopify/article-update", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -527,19 +588,25 @@ export default function BlogEditorWorkspace({
               bodyHtml,
               tags,
               isPublished: pub,
-              // SEO metafields optional; only sent if filled elsewhere.
             }),
           });
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+             const text = await res.text();
+             throw new Error(`Shopify error (${res.status}): ${text.slice(0, 40)}...`);
+          }
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Shopify save failed");
           setLastSaved(new Date().toISOString());
-          setNotice(pub ? "Saved to Shopify — published" : "Saved to Shopify");
+          if (!isAutoSave) setNotice(pub ? "Saved to Shopify — published" : "Saved to Shopify");
         } else {
+          // This is a "Save Draft" action (local DB sync)
           const res = await fetch("/api/seo/save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              id: draftId,
+              id: typeof draftId === "string" && !draftId.startsWith("gid://") ? draftId : null,
+              shopifyArticleId: isRemoteShopify ? draftId : null,
               title,
               content: bodyHtml,
               keyword: primaryKeyword,
@@ -547,29 +614,38 @@ export default function BlogEditorWorkspace({
               published: pub,
             }),
           });
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("application/json")) {
+             throw new Error("Local save failed (server error)");
+          }
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Save failed");
-          if (data.id) setDraftId(data.id);
-          const iso =
-            data.updatedAt != null
-              ? new Date(data.updatedAt).toISOString()
-              : payload.lastSaved;
+          
+          if (!isRemoteShopify && data.id) setDraftId(data.id);
+          
+          const iso = data.updatedAt != null ? new Date(data.updatedAt).toISOString() : payload.lastSaved;
           setLastSaved(iso);
-          setNotice(
-            pub
-              ? "Saved — marked published (visible on My Posts when published)"
-              : "Draft saved — appears on your dashboard",
-          );
+          if (!isAutoSave) {
+            setNotice(
+              isRemoteShopify 
+                ? "Draft saved locally — changes not live on Shopify yet"
+                : pub
+                  ? "Saved — marked published (visible on My Posts)"
+                  : "Draft saved — appears on your dashboard",
+            );
+          }
         }
       } catch (e) {
         setLastSaved(payload.lastSaved);
-        setNotice(
-          e.message ||
-            "Saved locally only. Connect DATABASE_URL (Neon) and run migrations to sync.",
-        );
+        if (!isAutoSave) {
+          setNotice(
+            e.message ||
+              "Saved locally only. Connect DATABASE_URL (Neon) and run migrations to sync.",
+          );
+        }
       } finally {
-        setRemoteSaving(false);
-        setTimeout(() => setNotice(null), 3200);
+        if (!isAutoSave) setRemoteSaving(false);
+        if (!isAutoSave) setTimeout(() => setNotice(null), 3200);
       }
     },
     [
@@ -583,6 +659,70 @@ export default function BlogEditorWorkspace({
       tags,
     ],
   );
+
+  /* 
+  // Debounced Auto-save - Disabled as per user request
+  useEffect(() => {
+    if (!bodyRef.current?.dataset.inited) return;
+    const timer = setTimeout(() => {
+      void persistDraft(undefined, true);
+    }, 3000); // Save after 3 seconds of inactivity
+    return () => clearTimeout(timer);
+  }, [title, primaryKeyword, bodyRev, persistDraft]);
+  */
+
+  const findProductMentions = useCallback(() => {
+    if (!bodyRef.current || products.length === 0) return [];
+    const text = bodyRef.current.innerText;
+    const mentions = [];
+    
+    products.forEach(product => {
+      const title = product.title.toLowerCase();
+      if (title.length < 4) return; // Skip very short titles to avoid false positives
+
+      let pos = 0;
+      while ((pos = text.toLowerCase().indexOf(title, pos)) !== -1) {
+        // Check if already linked
+        const snippet = text.slice(Math.max(0, pos - 100), Math.min(text.length, pos + 100));
+        // Simple check for nearby </a>
+        const nearbyHtml = bodyRef.current.innerHTML;
+        // This is a bit complex with just innerText.
+        // For now, let's just track that we found it.
+        mentions.push({
+          product,
+          index: pos,
+          text: text.slice(pos, pos + title.length)
+        });
+        pos += title.length;
+      }
+    });
+    return mentions;
+  }, [products]);
+
+  const autoLinkAll = () => {
+    const el = bodyRef.current;
+    if (!el) return;
+    let html = el.innerHTML;
+    
+    products.forEach(product => {
+      const title = product.title;
+      const url = `https://${initialDraft?.shop || "mystore.myshopify.com"}/products/${product.handle}`;
+      
+      // regex to find title but not inside <a> tags
+      // This is a simple version. A robust one would parse the DOM.
+      const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?<!<a[^>]*>)${escapedTitle}(?![^<]*</a>)`, 'gi');
+      
+      html = html.replace(regex, (match) => {
+        return `<a href="${url}" class="product-link" style="color:#17a5b4; text-decoration:underline; font-weight:600;" data-product-id="${product.id}">${match}</a>`;
+      });
+    });
+    
+    el.innerHTML = html;
+    syncBody();
+    setNotice("Auto-linked all product mentions!");
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   const saveOpenRouterKey = () => {
     try {
@@ -674,6 +814,51 @@ export default function BlogEditorWorkspace({
     }
     el.insertAdjacentHTML("beforeend", html);
     syncBody();
+  };
+
+  const deletePost = async () => {
+    if (!draftId) {
+      setNotice("Nothing to delete (this post hasn't been saved yet)");
+      setTimeout(() => setNotice(null), 3000);
+      return;
+    }
+
+    const confirmMsg = isRemoteShopify 
+      ? "Permanently delete this article from Shopify and BlogLift?" 
+      : "Permanently delete this draft?";
+      
+    if (!window.confirm(confirmMsg)) return;
+
+    setRemoteSaving(true);
+    try {
+      if (isRemoteShopify) {
+        const res = await fetch("/api/shopify/article-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: draftId }),
+        });
+        if (!res.ok) throw new Error("Failed to delete from Shopify");
+      } else {
+        const res = await fetch("/api/seo/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: draftId }),
+        });
+        if (!res.ok) throw new Error("Failed to delete local draft");
+      }
+      
+      localStorage.removeItem(LS_KEY);
+      setNotice("Post deleted permanently");
+      setTimeout(() => {
+        setNotice(null);
+        navigate("/app/dashboard");
+      }, 1000);
+    } catch (e) {
+      setNotice(e.message || "Deletion failed");
+      setTimeout(() => setNotice(null), 3000);
+    } finally {
+      setRemoteSaving(false);
+    }
   };
 
   const scrollToHeading = (id) => {
@@ -864,7 +1049,7 @@ export default function BlogEditorWorkspace({
 
   const publish = () => {
     if (isRemoteShopify) {
-      if (!window.confirm("Publish this post to Shopify?")) return;
+      if (!window.confirm("Update this post on Shopify?")) return;
       void persistDraft(true);
       return;
     }
@@ -891,6 +1076,11 @@ export default function BlogEditorWorkspace({
             isPublished: true,
           }),
         });
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           const text = await res.text();
+           throw new Error(`Publish error (${res.status}): ${text.slice(0, 40)}...`);
+        }
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Shopify publish failed");
         if (data?.article?.id) setDraftId(data.article.id);
@@ -911,7 +1101,7 @@ export default function BlogEditorWorkspace({
     <button
       type="button"
       title={tip}
-      className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
+      className="rounded-md p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
       onMouseDown={(e) => {
         e.preventDefault();
         onFormat?.();
@@ -922,61 +1112,75 @@ export default function BlogEditorWorkspace({
   );
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-slate-100 p-2 text-slate-900 sm:p-3 md:p-4">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl">
+    <div className="flex min-h-[100dvh] flex-col bg-slate-100 dark:bg-slate-950 p-2 text-slate-900 dark:text-slate-100 sm:p-3 md:p-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm sm:rounded-2xl">
       {/* Top bar */}
-      <header className="flex shrink-0 flex-col border-b border-slate-100 bg-white">
+      <header className="flex shrink-0 flex-col border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 md:px-5">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-900/40 px-2.5 py-0.5 text-xs font-medium text-amber-900 dark:text-amber-300">
               <span className="size-1.5 rounded-full bg-amber-500" />
               {published ? "Published" : "Draft"}
             </span>
+            {lastSaved && (
+              <span className="ml-2 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                Last saved: {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
           <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
             <button
-              type="button"
-              onClick={() => setGenOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+              onClick={() => setIsProductLinkerOpen(true)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-md active:scale-95"
             >
-              <Sparkles className="size-3.5 text-[#17a5b4] sm:size-4" />
+              <Link2 className="h-3.5 w-3.5" />
+              Smart Product Linker
+            </button>
+            <button
+              onClick={() => setGenOpen(true)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-md active:scale-95"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
               Generate with AI
             </button>
             <button
-              type="button"
+              onClick={() => persistDraft()}
               disabled={remoteSaving}
-              onClick={() => void persistDraft()}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+              className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-md disabled:opacity-50 active:scale-[0.98]"
             >
-              {remoteSaving ? (
-                <Loader2 className="size-3.5 animate-spin sm:size-4" />
-              ) : (
-                <Save className="size-3.5 sm:size-4" />
-              )}
-              <span className="hidden sm:inline">
-                {remoteSaving ? "Saving…" : "Save Draft"}
-              </span>
-              <span className="sm:hidden">
-                {remoteSaving ? "…" : "Save"}
-              </span>
+              <Save className="h-3.5 w-3.5" />
+              {remoteSaving ? "Saving..." : "Save Draft"}
             </button>
             <button
-              type="button"
-              onClick={publish}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#17a5b4] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#149db0] sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm"
+              onClick={deletePost}
+              disabled={remoteSaving || !draftId}
+              className="flex items-center gap-2 rounded-xl border border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/20 px-3.5 py-2 text-[11px] font-bold text-rose-600 dark:text-rose-400 shadow-sm transition-all hover:bg-rose-100/50 dark:hover:bg-rose-900/40 disabled:opacity-50 active:scale-[0.98]"
+              title="Permanently delete this post"
             >
-              <Send className="size-3.5 sm:size-4" />
-              Publish
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+            <button
+              onClick={() => persistDraft(!published)}
+              disabled={remoteSaving}
+              className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg transition-all disabled:opacity-50 active:scale-[0.98] ${
+                published
+                  ? "bg-slate-800 dark:bg-slate-700 shadow-slate-900/20 hover:bg-slate-900"
+                  : "bg-gradient-to-r from-[#17a5b4] to-[#149db0] shadow-[#17a5b4]/30 hover:shadow-[#17a5b4]/40 hover:scale-[1.02]"
+              }`}
+            >
+              <Send className="h-3.5 w-3.5" />
+              {published ? "Unpublish" : "Publish"}
             </button>
           </div>
         </div>
         {/* AI + quick SEO stay visible on small screens (full sidebar is lg+ only) */}
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-2 py-2 sm:flex-row sm:items-start sm:gap-3 sm:px-3 md:px-5 lg:hidden">
+        <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 px-2 py-2 sm:flex-row sm:items-start sm:gap-3 sm:px-3 md:px-5 lg:hidden">
           <div
-            className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2 sm:border-b-0 sm:pb-0"
+            className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800/80 pb-2 sm:border-b-0 sm:pb-0"
             aria-label="SEO score summary"
           >
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               SEO
             </span>
             <span className="text-sm font-bold text-slate-900">{seoScore}</span>
@@ -988,7 +1192,7 @@ export default function BlogEditorWorkspace({
             </span>
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <Sparkles className="size-3.5 shrink-0 text-[#17a5b4]" />
               AI actions
             </div>
@@ -1011,7 +1215,7 @@ export default function BlogEditorWorkspace({
                   type="button"
                   disabled={!!aiBusy}
                   onClick={() => runTransform(op)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium capitalize text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:text-xs"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white px-2.5 py-1.5 text-[11px] font-medium capitalize text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-50 sm:text-xs"
                 >
                   {aiBusy === op ? (
                     <Loader2 className="size-3.5 animate-spin" />
@@ -1023,7 +1227,7 @@ export default function BlogEditorWorkspace({
               <button
                 type="button"
                 onClick={() => setShowKeyModal(true)}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-600 hover:bg-slate-50 sm:text-xs"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-[11px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 sm:text-xs"
               >
                 <KeyRound className="size-3" />
                 API key
@@ -1036,7 +1240,7 @@ export default function BlogEditorWorkspace({
       <div className="flex min-h-0 flex-1 gap-1.5 overflow-hidden bg-slate-100/95 p-1.5 sm:gap-2 sm:p-2 md:gap-3 md:p-3">
         {/* Outline */}
         <aside
-          className={`hidden shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm transition-[width] duration-200 ease-out md:flex ${
+          className={`hidden shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-slate-900 shadow-sm transition-[width] duration-200 ease-out md:flex ${
             outlineOpen ? "w-[13.5rem] sm:w-52" : "w-10 sm:w-11"
           }`}
         >
@@ -1045,7 +1249,7 @@ export default function BlogEditorWorkspace({
               <button
                 type="button"
                 onClick={() => setOutlineOpen(false)}
-                className="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-50"
+                className="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 dark:border-slate-800 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 hover:bg-slate-50"
                 aria-expanded={true}
                 title="Hide outline"
               >
@@ -1063,7 +1267,7 @@ export default function BlogEditorWorkspace({
                   className={`mb-1 w-full rounded-md px-2 py-1.5 text-left text-sm font-semibold ${
                     activeHeadingId === null
                       ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
-                      : "text-slate-700 hover:bg-slate-100"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100"
                   }`}
                 >
                   H1 · Title
@@ -1076,11 +1280,11 @@ export default function BlogEditorWorkspace({
                     className={`mb-0.5 w-full rounded-md px-2 py-1.5 text-left text-sm ${
                       item.level === "H2"
                         ? "pl-2 font-medium"
-                        : "pl-4 text-slate-600"
+                        : "pl-4 text-slate-600 dark:text-slate-300"
                     } ${
                       activeHeadingId === item.id
                         ? "border-l-2 border-[#17a5b4] bg-[#17a5b4]/10 text-[#134e56]"
-                        : "text-slate-700 hover:bg-white"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-white"
                     }`}
                   >
                     <span className="mr-1.5 text-[10px] font-bold text-slate-400">
@@ -1095,7 +1299,7 @@ export default function BlogEditorWorkspace({
             <button
               type="button"
               onClick={() => setOutlineOpen(true)}
-              className="flex w-full flex-1 flex-col items-center py-3 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+              className="flex w-full flex-1 flex-col items-center py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-200"
               aria-expanded={false}
               title="Show outline"
             >
@@ -1105,10 +1309,10 @@ export default function BlogEditorWorkspace({
         </aside>
 
         {/* Editor column */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 text-xs text-slate-500 sm:px-4 sm:text-sm md:px-5">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-slate-900 shadow-sm">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 px-3 py-2 text-xs text-slate-500 dark:text-slate-400 sm:px-4 sm:text-sm md:px-5">
             <span>~ {wordCount} words</span>
-            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-0.5">
               <ToolbarBtn title="Bold" onFormat={() => exec("bold")}>
                 <Bold className="size-4" />
               </ToolbarBtn>
@@ -1133,6 +1337,13 @@ export default function BlogEditorWorkspace({
               <ToolbarBtn title="Pro tip box" onFormat={insertTip}>
                 <Lightbulb className="size-4" />
               </ToolbarBtn>
+              <div className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
+              <ToolbarBtn title="Undo" onFormat={() => exec("undo")}>
+                <Undo2 className="size-4" />
+              </ToolbarBtn>
+              <ToolbarBtn title="Redo" onFormat={() => exec("redo")}>
+                <Redo2 className="size-4" />
+              </ToolbarBtn>
             </div>
           </div>
           <div
@@ -1147,7 +1358,7 @@ export default function BlogEditorWorkspace({
               className="mb-2 w-full border-0 bg-transparent text-2xl font-bold tracking-tight text-slate-900 outline-none focus:ring-0 sm:text-3xl"
               placeholder="Title"
             />
-            <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="rounded-full bg-[#17a5b4]/10 px-2.5 py-0.5 text-xs font-medium text-[#115960]">
                 {primaryKeyword || "—"}
               </span>
@@ -1161,7 +1372,7 @@ export default function BlogEditorWorkspace({
               ref={bodyRef}
               contentEditable
               suppressContentEditableWarning
-              className="max-w-none min-h-[240px] text-sm leading-relaxed text-slate-800 outline-none sm:min-h-[280px] sm:text-base [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-bold sm:[&_h2]:mt-8 sm:[&_h2]:text-xl [&_h3]:mt-3 [&_h3]:text-base [&_h3]:font-semibold sm:[&_h3]:mt-4 sm:[&_h3]:text-lg [&_p]:my-2 [&_p]:sm:my-3 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:sm:my-3 [&_ul]:sm:pl-6"
+              className="max-w-none min-h-[240px] text-sm leading-relaxed text-slate-800 dark:text-slate-100 outline-none sm:min-h-[280px] sm:text-base [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-bold sm:[&_h2]:mt-8 sm:[&_h2]:text-xl [&_h3]:mt-3 [&_h3]:text-base [&_h3]:font-semibold sm:[&_h3]:mt-4 sm:[&_h3]:text-lg [&_p]:my-2 [&_p]:sm:my-3 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:sm:my-3 [&_ul]:sm:pl-6"
               onInput={syncBody}
               onBlur={syncBody}
             />
@@ -1170,8 +1381,8 @@ export default function BlogEditorWorkspace({
 
         {/* Right column: AI first (always visible), SEO + tips scroll below */}
         <aside className="hidden w-[17.5rem] shrink-0 flex-col gap-2 self-stretch min-h-0 lg:flex xl:w-72">
-          <div className="shrink-0 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <div className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
               <Sparkles className="size-4 text-[#17a5b4]" />
               AI actions
             </div>
@@ -1180,7 +1391,7 @@ export default function BlogEditorWorkspace({
                 type="button"
                 disabled={!!aiBusy}
                 onClick={runImproveSeo}
-                className="rounded-lg bg-[#17a5b4] px-2 py-2.5 text-center text-xs font-semibold text-white hover:bg-[#149db0] disabled:opacity-50"
+                className="col-span-2 rounded-xl bg-gradient-to-br from-[#17a5b4] to-[#128a9c] py-3 text-center text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#17a5b4]/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               >
                 {aiBusy === "seo" ? (
                   <Loader2 className="mx-auto size-4 animate-spin" />
@@ -1194,7 +1405,7 @@ export default function BlogEditorWorkspace({
                   type="button"
                   disabled={!!aiBusy}
                   onClick={() => runTransform(op)}
-                  className="rounded-lg border border-slate-200 bg-slate-50/80 px-2 py-2.5 text-center text-xs font-medium capitalize text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                  className="ai-btn-premium"
                 >
                   {aiBusy === op ? (
                     <Loader2 className="mx-auto size-4 animate-spin" />
@@ -1207,25 +1418,25 @@ export default function BlogEditorWorkspace({
             <button
               type="button"
               onClick={() => setShowKeyModal(true)}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-xs text-slate-600 hover:bg-slate-50"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 transition-all"
             >
               <KeyRound className="size-3.5" />
               API key
             </button>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-slate-900 shadow-sm">
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <div className="space-y-5">
                 <section aria-labelledby="seo-score-heading">
                   <h2
                     id="seo-score-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     SEO score
                   </h2>
                   <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">
                       {seoScore}
                     </span>
                     <span className="text-slate-400">/100</span>
@@ -1235,7 +1446,7 @@ export default function BlogEditorWorkspace({
                       {badge.text}
                     </span>
                   </div>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                     <div
                       className="h-full rounded-full bg-[#17a5b4] transition-all"
                       style={{ width: `${seoScore}%` }}
@@ -1257,12 +1468,12 @@ export default function BlogEditorWorkspace({
                 </section>
 
                 <section
-                  className="border-t border-slate-100 pt-5"
+                  className="border-t border-slate-100 dark:border-slate-800 pt-5"
                   aria-labelledby="keyword-heading"
                 >
                   <h2
                     id="keyword-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     Keyword
                   </h2>
@@ -1270,11 +1481,11 @@ export default function BlogEditorWorkspace({
                     type="text"
                     value={primaryKeyword}
                     onChange={(e) => setPrimaryKeyword(e.target.value)}
-                    className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm outline-none ring-[#17a5b4]/30 focus:bg-white focus:ring-2"
+                    className="mt-2 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 px-3 py-2 text-sm outline-none ring-[#17a5b4]/30 focus:bg-white dark:focus:bg-slate-900 focus:ring-2"
                     placeholder="Primary"
                   />
                   <div className="mt-3 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Suggested keywords
                     </p>
                     {openrouterKey.trim() ? (
@@ -1293,7 +1504,7 @@ export default function BlogEditorWorkspace({
                         key={kw}
                         type="button"
                         onClick={() => setPrimaryKeyword(kw)}
-                        className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
+                        className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
                       >
                         {kw}
                       </button>
@@ -1322,12 +1533,12 @@ export default function BlogEditorWorkspace({
                 </section>
 
                 <section
-                  className="border-t border-slate-100 pt-5"
+                  className="border-t border-slate-100 dark:border-slate-800 pt-5"
                   aria-labelledby="tips-heading"
                 >
                   <h2
                     id="tips-heading"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     Tips
                   </h2>
@@ -1345,7 +1556,7 @@ export default function BlogEditorWorkspace({
                         >
                           •
                         </span>
-                        <span className="text-slate-700">{tip.text}</span>
+                        <span className="text-slate-700 dark:text-slate-200">{tip.text}</span>
                       </li>
                     ))}
                   </ul>
@@ -1355,62 +1566,50 @@ export default function BlogEditorWorkspace({
           </div>
         </aside>
       </div>
-      </div>
+    </div>
 
       {notice && (
-        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
-          {notice}
+        <div className="fixed bottom-8 left-1/2 z-[100] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3 rounded-2xl bg-slate-900/90 px-6 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl backdrop-blur-xl border border-white/10">
+            <div className="flex size-5 items-center justify-center rounded-full bg-[#17a5b4]/20 text-[#17a5b4]">
+              <CheckCircle2 className="size-3.5" />
+            </div>
+            {notice}
+          </div>
         </div>
       )}
 
       {showKeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">OpenRouter API key</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-2xl">
+            <h2 className="mb-4 text-xl font-bold dark:text-white">API configuration</h2>
+            <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+              Enter your OpenRouter or Gemini API key to enable premium AI features. Stored only in this browser.
+            </p>
+            <div className="space-y-4">
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="password"
+                  value={openrouterKey}
+                  onChange={(e) => setOpenrouterKey(e.target.value)}
+                  placeholder="sk-or-..."
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-[#17a5b4]/30"
+                />
+              </div>
               <button
-                type="button"
-                onClick={() => setShowKeyModal(false)}
-                className="rounded p-1 hover:bg-slate-100"
+                onClick={saveOpenRouterKey}
+                className="w-full rounded-xl bg-[#17a5b4] py-3 font-bold text-white shadow-lg shadow-[#17a5b4]/20"
               >
-                <X className="size-5" />
+                Save key
+              </button>
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="w-full py-2 text-sm text-slate-500"
+              >
+                Skip for now
               </button>
             </div>
-            <p className="mt-2 text-sm text-slate-500">
-              Stored only in this browser. Get a key at{" "}
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-[#17a5b4] underline"
-              >
-                openrouter.ai/keys
-              </a>
-              . You can also open{" "}
-              <a
-                href="/api/openrouter"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-[#17a5b4] underline"
-              >
-                /api/openrouter
-              </a>{" "}
-              for JSON links.
-            </p>
-            <input
-              type="password"
-              value={openrouterKey}
-              onChange={(e) => setOpenrouterKey(e.target.value)}
-              className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="sk-or-…"
-            />
-            <button
-              type="button"
-              onClick={saveOpenRouterKey}
-              className="mt-3 w-full rounded-lg bg-[#17a5b4] py-2 text-sm font-semibold text-white hover:bg-[#149db0]"
-            >
-              Save
-            </button>
           </div>
         </div>
       )}
@@ -1448,19 +1647,19 @@ export default function BlogEditorWorkspace({
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
               <div className="space-y-5">
                 <div>
-              <label
-                htmlFor="gen-blog-topic"
-                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >
+                  <label
+                    htmlFor="gen-blog-topic"
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                  >
                     <FileText className="size-3.5 text-slate-400" />
                     Blog topic
                   </label>
                   <input
-                id="gen-blog-topic"
+                    id="gen-blog-topic"
                     type="text"
                     value={genTopic}
                     onChange={(e) => setGenTopic(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-[#17a5b4]/25 transition-shadow focus:border-[#17a5b4] focus:ring-2"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-4 py-3 text-sm outline-none ring-[#17a5b4]/25 transition-shadow focus:border-[#17a5b4] focus:ring-2"
                     placeholder="e.g. How to boost Shopify store conversions with SEO"
                   />
                 </div>
@@ -1468,7 +1667,7 @@ export default function BlogEditorWorkspace({
                 <div>
                   <label
                     htmlFor="gen-target-keyword"
-                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     <KeyRound className="size-3.5 text-slate-400" />
                     Target keyword
@@ -1480,7 +1679,7 @@ export default function BlogEditorWorkspace({
                       type="text"
                       value={genKeyword}
                       onChange={(e) => setGenKeyword(e.target.value)}
-                      className="w-full rounded-xl border border-[#17a5b4]/40 bg-white py-3 pl-10 pr-4 text-sm outline-none ring-[#17a5b4]/20 transition-shadow focus:ring-2 focus:ring-[#17a5b4]/30"
+                      className="w-full rounded-xl border border-[#17a5b4]/40 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm outline-none ring-[#17a5b4]/20 transition-shadow focus:ring-2 focus:ring-[#17a5b4]/30"
                       placeholder="shopify conversion optimization"
                     />
                   </div>
@@ -1490,7 +1689,7 @@ export default function BlogEditorWorkspace({
                   <div>
                     <label
                       htmlFor="gen-tone"
-                      className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                      className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                     >
                       <MessageSquare className="size-3.5 text-slate-400" />
                       Tone of voice
@@ -1500,7 +1699,7 @@ export default function BlogEditorWorkspace({
                         id="gen-tone"
                         value={genTone}
                         onChange={(e) => setGenTone(e.target.value)}
-                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-3 pr-10 text-sm outline-none ring-[#17a5b4]/25 focus:border-[#17a5b4] focus:ring-2"
+                        className="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 py-3 pl-3 pr-10 text-sm outline-none ring-[#17a5b4]/25 focus:border-[#17a5b4] focus:ring-2"
                       >
                         {GEN_TONES.map((t) => (
                           <option key={t} value={t}>
@@ -1514,7 +1713,7 @@ export default function BlogEditorWorkspace({
                     </div>
                   </div>
                   <div>
-                    <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Word count
                     </span>
                     <div className="mt-2 flex gap-2">
@@ -1526,7 +1725,7 @@ export default function BlogEditorWorkspace({
                           className={`flex-1 rounded-xl py-2.5 text-center text-sm font-semibold transition-colors ${
                             genWordTarget === n
                               ? "bg-[#17a5b4] text-white shadow-sm"
-                              : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                              : "border border-slate-200 dark:border-slate-800 bg-slate-50 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
                           }`}
                         >
                           {n}
@@ -1536,9 +1735,9 @@ export default function BlogEditorWorkspace({
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-5">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Preview outline
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1562,7 +1761,7 @@ export default function BlogEditorWorkspace({
                       </button>
                     </div>
                   </div>
-                  <div className="min-h-[120px] rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                  <div className="min-h-[120px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 px-4 py-3">
                     {genOutlinePreview.trim() ? (
                       <OutlinePreviewLines text={genOutlinePreview} />
                     ) : (
@@ -1576,7 +1775,7 @@ export default function BlogEditorWorkspace({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-slate-100 bg-white px-5 pb-5 pt-4">
+            <div className="shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 pb-5 pt-4">
               <button
                 type="button"
                 disabled={!!aiBusy}
@@ -1596,6 +1795,23 @@ export default function BlogEditorWorkspace({
           </div>
         </div>
       )}
+
+      {/* ── Smart Product Linker Overlay ───────────────────── */}
+      <ProductLinkerOverlay 
+        isOpen={isProductLinkerOpen}
+        onClose={() => setIsProductLinkerOpen(false)}
+        products={products}
+        content={bodyRef.current?.innerHTML || ""}
+        onUpdateContent={(newHtml) => {
+          if (bodyRef.current) {
+            bodyRef.current.innerHTML = newHtml;
+            syncBody();
+          }
+        }}
+        isSyncing={isSyncingProducts}
+        onSync={syncProducts}
+        shopUrl={initialDraft?.shop || "mystore.myshopify.com"}
+      />
     </div>
   );
 }

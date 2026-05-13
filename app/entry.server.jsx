@@ -35,6 +35,32 @@ export default async function handleRequest(
           pipe(body);
         },
         onShellError(error) {
+          // #region agent log
+          fetch(
+            "http://127.0.0.1:7697/ingest/a18a9cec-7dcc-4b42-a60d-5572eee3fb6a",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Debug-Session-Id": "7041f3",
+              },
+              body: JSON.stringify({
+                sessionId: "7041f3",
+                location: "entry.server.jsx:onShellError",
+                message: "SSR shell error",
+                data: {
+                  err:
+                    error instanceof Error
+                      ? error.message
+                      : String(error ?? "unknown"),
+                },
+                timestamp: Date.now(),
+                hypothesisId: "H5",
+                runId: "pre-fix",
+              }),
+            },
+          ).catch(() => {});
+          // #endregion
           reject(error);
         },
         onError(error) {

@@ -43,6 +43,8 @@ model Post {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   shop       String
+  scheduledAt DateTime?
+  postType    String?   @default("seo")
   @@index([shop])
   @@index([shop, published])
   @@index([shop, shopifyArticleId])
@@ -58,4 +60,17 @@ model ArticleView {
 
   @@unique([shop, articleId])
   @@index([shop])
+}
+
+model PublishRule {
+  id        String   @id @default(cuid())
+  shop      String
+  postType  String
+  dayOfWeek Int
+  timeOfDay String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([shop, postType])
 }

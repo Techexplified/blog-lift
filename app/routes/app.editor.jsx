@@ -15,7 +15,12 @@ export const loader = async ({ request }) => {
   const isNew = url.searchParams.get("new") === "1";
 
   if (!id || isNew) {
-    return { initialDraft: null, isNew, source: "bloglift" };
+    const title = url.searchParams.get("title");
+    return { 
+      initialDraft: title ? { title, content: "", keyword: "", score: 0 } : null, 
+      isNew, 
+      source: "bloglift" 
+    };
   }
 
   // Shopify article IDs are GIDs like: gid://shopify/Article/123

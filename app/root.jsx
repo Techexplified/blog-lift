@@ -1,4 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ThemeToggle } from "./components/ThemeToggle";
 import "./global.css";
 
 export default function App() {
@@ -11,7 +13,12 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <ThemeProvider>
+          <Outlet />
+          <div className="fixed top-[76px] right-4 z-[9999] pointer-events-auto">
+            <ThemeToggle />
+          </div>
+        </ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

@@ -1,14 +1,77 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
-/* BlogLift brand accent — reference for custom CSS / inline styles */
 :root {
   --bloglift-brand: #17a5b4;
   --bloglift-brand-hover: #149db0;
   --bloglift-brand-deep: #128a9c;
+  
+  /* Theme Variables - Light */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-primary: #e2e8f0;
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-/* Use browser default root size (16px) so the UI scales naturally
-   and matches 100% zoom expectations both horizontally and vertically. */
+.dark,
+[data-theme='dark'],
+body.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --border-primary: #334155;
+  --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}
+
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
 html {
   font-size: 16px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.editor-tip-block {
+  border-left: 4px solid var(--bloglift-brand);
+  background: rgba(23, 165, 180, 0.08);
+  padding: 16px 18px;
+  border-radius: 0 12px 12px 0;
+  margin: 20px 0;
+  transition: all 0.2s ease;
+}
+
+.dark .editor-tip-block {
+  background: rgba(23, 165, 180, 0.05);
+  border-left-color: var(--bloglift-brand);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ai-btn-premium {
+  @apply rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-3 py-2 text-center text-xs font-bold capitalize text-slate-700 dark:text-slate-200 transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-200/20 dark:hover:shadow-black/40 active:scale-[0.97] disabled:opacity-50;
 }

@@ -44,15 +44,14 @@ export default function Index() {
     mainWrapper: {
       width: "100%",
       minHeight: "100vh",
-      // IMPORTANT: Overrides to ensure full width and no surrounding admin padding
-      // You may need to inspect the outer frame's CSS and adjust the parent div's
-      // padding to truly get edge-to-edge content.
       margin: "0",
       padding: "0",
       boxSizing: "border-box",
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-      backgroundColor: "#f4f6f8", // Light background for a clean look (similar to Polaris)
+      backgroundColor: "var(--bg-secondary)",
+      color: "var(--text-primary)",
+      transition: "background-color 0.3s ease, color 0.3s ease",
     },
 
     // Fixed-width content container for the Hero section
@@ -94,7 +93,7 @@ export default function Index() {
       zIndex: 100,
     },
     navLinkActive: {
-      backgroundColor: "#e4e5e7", // Light gray for active state
+      backgroundColor: "var(--bg-tertiary)", // Light gray for active state
       fontWeight: "600",
       color: "#17a5b4", // Accent color
     },
@@ -104,8 +103,8 @@ export default function Index() {
       display: "inline-flex",
       alignItems: "center",
       gap: "8px",
-      backgroundColor: "rgba(255, 255, 255, 0.9)",
-      border: "1px solid #c9c9c9",
+      backgroundColor: "var(--bg-primary)",
+      border: "1px solid var(--border-primary)",
       borderRadius: "24px",
       padding: "8px 16px",
       marginBottom: "24px",
@@ -126,7 +125,7 @@ export default function Index() {
     },
     subtitle: {
       fontSize: "17px",
-      color: "#475569",
+      color: "var(--text-secondary)",
       maxWidth: "640px",
       margin: "0 auto 28px",
       lineHeight: "1.6",
@@ -212,6 +211,7 @@ export default function Index() {
       </nav> */}
 
       {/* HERO CONTENT CONTAINER: Max-width centers content */}
+
       <div style={styles.contentContainer}>
         {/* HERO */}
         <div>

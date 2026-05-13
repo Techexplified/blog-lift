@@ -49,13 +49,14 @@ export default function BlogDetailPage() {
     mainWrapper: {
       minHeight: "100vh",
       width: "100%",
-      background:
-        "linear-gradient(135deg, #f5f7fa 0%, #ffffff 50%, #f0f9ff 100%)",
+      background: "var(--bg-secondary)",
+      color: "var(--text-primary)",
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, sans-serif',
       margin: "0",
       padding: "0",
       boxSizing: "border-box",
+      transition: "background-color 0.3s ease, color 0.3s ease",
     },
 
     navWrapper: {
@@ -104,7 +105,7 @@ export default function BlogDetailPage() {
       fontSize: "clamp(26px, 4vw, 32px)",
       fontWeight: "800",
       marginBottom: "20px",
-      color: "#0f172a",
+      color: "var(--text-primary)",
       lineHeight: "1.2",
     },
 
@@ -131,12 +132,12 @@ export default function BlogDetailPage() {
     article: {
       fontSize: "16px",
       lineHeight: "1.75",
-      color: "#334155",
-      backgroundColor: "white",
+      color: "var(--text-secondary)",
+      backgroundColor: "var(--bg-primary)",
       padding: "28px",
       borderRadius: "12px",
-      border: "1px solid #e2e8f0",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+      border: "1px solid var(--border-primary)",
+      boxShadow: "var(--card-shadow)",
     },
 
     articleContent: {
@@ -153,8 +154,8 @@ export default function BlogDetailPage() {
 
     dateBadge: {
       padding: "6px 14px",
-      background: "#f1f5f9",
-      color: "#475569",
+      background: "var(--bg-tertiary)",
+      color: "var(--text-secondary)",
       borderRadius: "20px",
       fontWeight: "600",
       fontSize: "13px",

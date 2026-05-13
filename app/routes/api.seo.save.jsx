@@ -6,7 +6,7 @@ export async function action({ request }) {
   const shop = session.shop;
 
   const body = await request.json();
-  const { id, title, content, keyword, score, published } = body;
+  const { id, title, content, keyword, score, published, shopifyArticleId } = body;
 
   if (!title) return Response.json({ error: "Missing title" }, { status: 400 });
 
@@ -16,24 +16,34 @@ export async function action({ request }) {
   const publishedBool = Boolean(published);
 
   try {
-    if (id) {
+    // If it's a Shopify article, we might have a local draft linked to it
+    const findId = shopifyArticleId || (id && !id.startsWith("gid://") ? id : null);
+
+    if (findId) {
       const existing = await prisma.post.findFirst({
-        where: { id, shop },
-      });
-      if (!existing) {
-        return Response.json({ error: "Draft not found" }, { status: 404 });
-      }
-      const updated = await prisma.post.update({
-        where: { id },
-        data: {
-          title,
-          content: contentStr,
-          keyword: keywordStr,
-          score: scoreNum,
-          published: publishedBool,
+        where: {
+          OR: [
+            { id: findId },
+            { shopifyArticleId: findId }
+          ],
+          shop
         },
       });
-      return Response.json(updated);
+
+      if (existing) {
+        const updated = await prisma.post.update({
+          where: { id: existing.id },
+          data: {
+            title,
+            content: contentStr,
+            keyword: keywordStr,
+            score: scoreNum,
+            published: publishedBool,
+            shopifyArticleId: shopifyArticleId || existing.shopifyArticleId,
+          },
+        });
+        return Response.json(updated);
+      }
     }
 
     const created = await prisma.post.create({
@@ -44,6 +54,7 @@ export async function action({ request }) {
         score: scoreNum,
         shop,
         published: publishedBool,
+        shopifyArticleId,
       },
     });
 

@@ -65,13 +65,14 @@ export default function BlogsPage() {
       minHeight: "100vh",
       width: "100%",
       padding: "0px 0px",
-      background:
-        "linear-gradient(135deg, #f5f7fa 0%, #ffffff 50%, #f0f9ff 100%)", // Gradient background from Index
+      background: "var(--bg-secondary)",
+      color: "var(--text-primary)",
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
       overflowX: "hidden",
       margin: "0",
       boxSizing: "border-box",
+      transition: "background-color 0.3s ease, color 0.3s ease",
     },
 
     contentContainer: {
@@ -107,11 +108,11 @@ export default function BlogsPage() {
     },
 
     row: {
-      background: "white",
+      background: "var(--bg-primary)",
       padding: "16px 18px",
       borderRadius: "12px",
-      border: "1px solid #e2e8f0",
-      boxShadow: "0 6px 15px rgba(0,0,0,0.08)", // Softer shadow
+      border: "1px solid var(--border-primary)",
+      boxShadow: "var(--card-shadow)",
       transition: "all 0.3s ease",
       cursor: "pointer",
       outline: "none",
@@ -146,7 +147,7 @@ export default function BlogsPage() {
       fontSize: "22px",
       fontWeight: 700,
       marginBottom: "8px",
-      color: "#0f172a",
+      color: "var(--text-primary)",
       lineHeight: 1.3,
       // Ensure text is not truncated by Admin styles
       whiteSpace: "normal",
@@ -174,7 +175,7 @@ export default function BlogsPage() {
       marginTop: "6px",
       fontSize: "15px", // Slightly larger font
       lineHeight: "1.6",
-      color: "#475569",
+      color: "var(--text-secondary)",
       whiteSpace: "normal",
     },
     loading: {
@@ -187,9 +188,9 @@ export default function BlogsPage() {
     navWrapper: {
       display: "flex",
       justifyContent: "center",
-      padding: "12px 0",
-      backgroundColor: "#ffffff",
-      borderBottom: "1px solid #e1e3e5",
+      padding: "12px 24px",
+      backgroundColor: "var(--bg-primary)",
+      borderBottom: "1px solid var(--border-primary)",
       marginBottom: "40px",
       boxShadow: "0 1px 0 rgba(0, 0, 0, 0.05)",
       width: "100%",
@@ -198,10 +199,11 @@ export default function BlogsPage() {
     },
     navLinks: {
       display: "flex",
+      alignItems: "center",
       gap: "40px",
       fontSize: "16px",
       fontWeight: "500",
-      color: "#212b36",
+      color: "var(--text-primary)",
     },
     navLinkItem: {
       padding: "8px 12px",
@@ -211,7 +213,7 @@ export default function BlogsPage() {
       userSelect: "none",
     },
     navLinkActive: {
-      backgroundColor: "#e4e5e7",
+      backgroundColor: "var(--bg-tertiary)",
       fontWeight: "600",
       color: "#17a5b4",
     },
@@ -269,10 +271,6 @@ export default function BlogsPage() {
           >
             Blog
           </button>
-
-          {/* <span style={styles.navLinkItem} onClick={() => navigate("/app/seo")}>
-            SEO
-          </span> */}
         </div>
       </nav>
 
@@ -326,7 +324,44 @@ export default function BlogsPage() {
                 </div>
 
                 <div style={styles.rowMeta}>
-                  <span style={styles.score}>Shopify</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={styles.score}>Shopify</span>
+                    <button
+                      type="button"
+                      style={{
+                        padding: "6px 12px",
+                        background: "transparent",
+                        color: "#17a5b4",
+                        border: "1px solid #17a5b4",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = "#17a5b4";
+                        e.currentTarget.style.color = "white";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = "#17a5b4";
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/app/editor?id=${encodeURIComponent(post.id)}`);
+                      }}
+                    >
+                      <span>Edit</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

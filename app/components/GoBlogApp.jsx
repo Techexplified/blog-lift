@@ -19,7 +19,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
       active
         ? "bg-[#17a5b4] text-white shadow-lg shadow-[#17a5b4]/25"
-        : "text-slate-600 hover:bg-slate-100"
+        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
     }`}
   >
     <Icon size={20} />
@@ -169,22 +169,6 @@ export default function GoBlogApp() {
     }
   };
 
-  // const uploadToShopify = async (base64) => {
-  //   const res = await fetch("/api/shopify/upload-file", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({
-  //       imageBase64: base64,
-  //       fileName: "blog-image.png",
-  //     }),
-  //   });
-
-  //   const data = await res.json();
-  //   if (!res.ok) throw new Error(data.error || "Upload failed");
-
-  //   return data.url;
-  // };
-
   const reloadShopifyPosts = async () => {
     const res = await fetch("/api/shopify/blogs");
     const data = await res.json();
@@ -319,82 +303,9 @@ export default function GoBlogApp() {
     }
   };
 
-  // const handleSave = async () => {
-  //   if (!currentPost.id) {
-  //     showNotification(
-  //       "This post doesn't have a Shopify ID. Use Save Draft instead.",
-  //       "error",
-  //     );
-  //     return;
-  //   }
-
-  //   try {
-  //     setIsSaving(true);
-
-  //     const res = await fetch("/api/shopify/article-update", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         id: currentPost.id,
-  //         title: currentPost.title,
-  //         bodyHtml: currentPost.content,
-  //         tags: currentPost.keyword,
-  //         isPublished: currentPost.visibility === "Visible",
-  //         seoTitle: currentPost.seoTitle,
-  //         seoDescription: currentPost.seoDescription,
-  //       }),
-  //     });
-
-  //     const result = await res.json();
-
-  //     if (!res.ok || result.error || result.errors) {
-  //       showNotification(result.error || "Failed to update article", "error");
-  //       return;
-  //     }
-
-  //     showNotification("Successfully updated in Shopify!", "success");
-  //     setActiveTab("posts");
-
-  //     const res1 = await fetch("/api/shopify/blogs");
-  //     const data = await res1.json();
-
-  //     const allArticles = data.flatMap((blogEdge) => {
-  //       const articles = blogEdge.node.articles?.edges || [];
-
-  //       return articles.map((articleEdge) => ({
-  //         ...articleEdge.node,
-  //         blogTitle: blogEdge.node.title, // e.g., "News"
-  //         blogId: blogEdge.node.id,
-  //       }));
-  //     });
-
-  //     setPosts(allArticles || []);
-  //     setCurrentPost({
-  //       id: null,
-  //       title: "",
-  //       content: "",
-  //       keyword: [],
-  //       visibility: "",
-  //       seoTitle: "",
-  //       seoDescription: "",
-  //     });
-  //   } catch (error) {
-  //     showNotification("Network error while updating", "error");
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
-  // };
-
   const handleSave = async () => {
     try {
       setIsSaving(true);
-
-      // let imageUrl = image;
-
-      // Upload only if base64
-      // if (imageUrl?.startsWith("data:")) {
-      //   imageUrl = await uploadToShopify(imageUrl);
-      // }
 
       const endpoint = currentPost.id
         ? "/api/shopify/article-update"
@@ -410,10 +321,6 @@ export default function GoBlogApp() {
           bodyHtml: currentPost.content,
           tags: currentPost.keyword,
           isPublished: currentPost.visibility === "Visible",
-
-          // image: imageUrl
-          //   ? { url: imageUrl, altText: currentPost.title }
-          //   : null,
         }),
       });
 
@@ -490,11 +397,11 @@ export default function GoBlogApp() {
   const RenderDashboard = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Posts</p>
-              <h3 className="text-3xl font-bold text-slate-800 mt-2">
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Posts</p>
+              <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mt-2">
                 {posts.length}
               </h3>
             </div>
@@ -505,9 +412,9 @@ export default function GoBlogApp() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-slate-800">Recent Activity</h2>
+      <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Recent Activity</h2>
           <button
             onClick={() => setActiveTab("posts")}
             className="text-lg text-[#17a5b4] font-medium hover:text-[#149db0]"
@@ -525,7 +432,7 @@ export default function GoBlogApp() {
               {posts.slice(0, 3).map((post) => (
                 <div
                   key={post.id}
-                  className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-colors border border-slate-100"
+                  className="p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-slate-100 dark:border-slate-800"
                 >
                   <div className="flex items-center gap-4">
                     {/* --- REPLACED SCORE WITH IMAGE --- */}
@@ -614,8 +521,8 @@ export default function GoBlogApp() {
     <div className="flex gap-6 max-w-6xl mx-auto p-4">
       <div className="flex-1 space-y-6">
         {/* Blog Post Content Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
             <h3 className="font-bold text-slate-700">Blog Post Content</h3>
             <button
               onClick={handleSave}
@@ -644,7 +551,7 @@ export default function GoBlogApp() {
                 onChange={(e) =>
                   setCurrentPost({ ...currentPost, title: e.target.value })
                 }
-                className="w-full text-xl font-bold border-b border-slate-200 outline-none py-2"
+                className="w-full text-xl font-bold border-b border-slate-200 dark:border-slate-700 bg-transparent outline-none py-2 dark:text-white"
               />
             </div>
             <div className="relative space-y-2">
@@ -716,7 +623,7 @@ export default function GoBlogApp() {
                 onChange={(e) =>
                   setCurrentPost({ ...currentPost, content: e.target.value })
                 }
-                className="w-full min-h-[300px] resize-none outline-none text-slate-600 leading-relaxed mt-2"
+                className="w-full min-h-[300px] resize-none outline-none text-slate-600 dark:text-slate-300 leading-relaxed mt-2 bg-transparent outline-none"
                 disabled={isGenerating}
               />
 
@@ -734,7 +641,7 @@ export default function GoBlogApp() {
         </div>
 
         {/* Visibility Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
           <label
             htmlFor="blogTarget"
             className="text-xs font-semibold text-slate-500 uppercase"
@@ -745,7 +652,7 @@ export default function GoBlogApp() {
             id="blogTarget"
             value={targetBlogId}
             onChange={(e) => setTargetBlogId(e.target.value)}
-            className="w-full mt-2 p-2 border rounded-lg bg-slate-50 outline-none"
+            className="w-full mt-2 p-2 border rounded-lg bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 outline-none dark:text-slate-200"
           >
             {availableBlogs.length ? (
               availableBlogs.map((b) => (
@@ -770,14 +677,14 @@ export default function GoBlogApp() {
             onChange={(e) =>
               setCurrentPost({ ...currentPost, visibility: e.target.value })
             }
-            className="w-full mt-2 p-2 border rounded-lg bg-slate-50 outline-none"
+            className="w-full mt-2 p-2 border rounded-lg bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 outline-none dark:text-slate-200"
           >
             <option value="Visible">Visible</option>
           </select>
         </div>
 
         {/* Blog Post Tags Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
             <h3 className="font-bold text-slate-700">Blog Post Tags</h3>
           </div>
@@ -793,7 +700,7 @@ export default function GoBlogApp() {
               {currentPost.keyword.map((tag, index) => (
                 <span
                   key={index}
-                  className="flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded-md text-sm text-slate-600"
+                  className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-md text-sm text-slate-600 dark:text-slate-300"
                 >
                   {tag}
                   <button
@@ -834,7 +741,7 @@ export default function GoBlogApp() {
         </div>
 
         {/* SEO Meta Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 space-y-4">
           <h3 className="font-bold text-slate-700 border-b pb-2">
             Blog Post SEO Meta
           </h3>
@@ -884,14 +791,14 @@ export default function GoBlogApp() {
           </div>
 
           {/* Google Preview */}
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
               Google Search Preview
             </p>
             <h4 className="text-blue-700 text-lg hover:underline cursor-pointer truncate">
               {currentPost.seoTitle || currentPost.title}
             </h4>
-            <p className="text-sm text-slate-600 line-clamp-2 mt-1">
+            <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mt-1">
               {currentPost.seoDescription ||
                 "Please enter a meta description for your blog post..."}
             </p>
@@ -902,8 +809,8 @@ export default function GoBlogApp() {
   );
 
   const renderPosts = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in">
-      <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in">
+      <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
         <h2 className="text-lg font-bold text-slate-800">My Blog Posts</h2>
       </div>
       <div className="divide-y divide-slate-100">
@@ -976,9 +883,8 @@ export default function GoBlogApp() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto p-4">
         {/* LEFT PANEL: INPUTS */}
         <div className="space-y-6">
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              {/* <Sparkles className="text-teal-600" size={20} /> */}
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               Blog Configuration
             </h2>
 
@@ -992,7 +898,7 @@ export default function GoBlogApp() {
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="e.g. 10 Best Summer Fashion Trends"
-                className="w-full p-3 border border-slate-300 rounded-xl outline-none transition focus:border-[#17a5b4] focus:ring-2 focus:ring-[#17a5b4]/35"
+                className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-xl outline-none transition focus:border-[#17a5b4] focus:ring-2 focus:ring-[#17a5b4]/35 bg-transparent dark:text-white"
               />
             </div>
 
@@ -1038,7 +944,7 @@ export default function GoBlogApp() {
               <label htmlFor="seo-keywords" className="text-sm font-semibold text-slate-700">
                 SEO Keywords
               </label>
-              <div className="min-h-[48px] p-2 border border-slate-300 rounded-xl flex flex-wrap gap-2 items-center bg-slate-50 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-[#17a5b4]/35">
+              <div className="min-h-[48px] p-2 border border-slate-300 dark:border-slate-700 rounded-xl flex flex-wrap gap-2 items-center bg-slate-50 dark:bg-slate-800/50 transition focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:ring-2 focus-within:ring-[#17a5b4]/35">
                 {keywords.map((kw, index) => (
                   <span
                     key={index}
@@ -1069,44 +975,6 @@ export default function GoBlogApp() {
                 Press Enter after each keyword
               </p>
             </div>
-
-            {/* Featured Image Upload & Delete */}
-            {/* <div className="space-y-1">
-              <label className="text-sm font-semibold text-slate-700">
-                Featured Image
-              </label>
-              {!image ? (
-                <label className="mt-2 flex flex-col items-center justify-center w-full h-32 cursor-pointer rounded-xl border-2 border-dashed border-slate-300 transition hover:border-[#17a5b4] hover:bg-slate-50">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="text-slate-400 mb-2" size={24} />
-                    <p className="text-xs text-slate-500">
-                      Click to upload or drag and drop
-                    </p>
-                  </div>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleImageChange}
-                    accept="image/*"
-                  />
-                </label>
-              ) : (
-                <div className="relative mt-2 group">
-                  <img
-                    src={image}
-                    alt="Preview"
-                    className="w-full h-40 object-cover rounded-xl border border-slate-200"
-                  />
-                  <button
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-            </div> */}
 
             {/* Outline */}
             <div className="space-y-1">
@@ -1148,10 +1016,10 @@ export default function GoBlogApp() {
 
         {/* RIGHT PANEL (PREVIEW) */}
         <div className="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-12 sticky top-4 h-[fit-content] min-h-[500px]">
-          <div className="bg-white p-6 rounded-full shadow-sm mb-6">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-full shadow-sm mb-6">
             <Sparkles size={48} className="animate-pulse text-[#17a5b4]" />
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-2">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
             Ready to Spark?
           </h3>
           <p className="text-slate-500 max-w-xs leading-relaxed">
@@ -1179,8 +1047,8 @@ export default function GoBlogApp() {
 
     return (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-xl shadow-xl w-[400px] space-y-6">
-          <h2 className="text-xl font-bold text-slate-800">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-xl w-[400px] space-y-6">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
             OpenRouter API key
           </h2>
           <p className="text-sm text-slate-600">
@@ -1240,7 +1108,7 @@ export default function GoBlogApp() {
     );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-300">
       {/* Toast Notification */}
       {notification && (
         <div
@@ -1252,67 +1120,53 @@ export default function GoBlogApp() {
       )}
 
       {/* TOP NAVBAR (instead of sidebar) */}
-      <nav className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5 sticky top-0 z-20">
+      <nav className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-4 sm:px-6 sticky top-0 z-50 backdrop-blur-md transition-all duration-300">
         {/* Logo */}
-        <div className="flex items-center gap-2 text-[#17a5b4]">
-          {/* <span className="text-xl font-bold text-slate-800">
-            SEO Optimizer
-          </span> */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-[#17a5b4] shadow-lg shadow-[#17a5b4]/20">
+            <Sparkles className="size-5 text-white" />
+          </div>
+          <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+            Blog<span className="text-[#17a5b4]">Lift</span>
+          </span>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-4 text-sm sm:gap-5 sm:text-base">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`flex items-center gap-1.5 font-medium transition-colors sm:gap-2 ${
-              activeTab === "dashboard"
-                ? "text-[#17a5b4]"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <LayoutDashboard size={16} />
-            Dashboard
-          </button>
-
-          <button
-            onClick={() => setActiveTab("editor")}
-            className={`flex items-center gap-1.5 font-medium transition-colors sm:gap-2 ${
-              activeTab === "editor"
-                ? "text-[#17a5b4]"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <PenTool size={16} />
-            Editor
-          </button>
-
-          <button
-            onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-1.5 font-medium transition-colors sm:gap-2 ${
-              activeTab === "posts"
-                ? "text-[#17a5b4]"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileText size={16} />
-            My Posts
-          </button>
-
-          <button
-            onClick={() => setActiveTab("generate")}
-            className={`flex items-center gap-1.5 font-medium transition-colors sm:gap-2 ${
-              activeTab === "generate"
-                ? "text-[#17a5b4]"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Sparkles size={16} />
-            Generate
-          </button>
+        <div className="flex items-center gap-1 text-sm sm:gap-2">
+          {[
+            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { id: "editor", label: "Editor", icon: PenTool },
+            { id: "posts", label: "My Posts", icon: FileText },
+            { id: "generate", label: "Generate", icon: Sparkles },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all ${
+                  isActive
+                    ? "text-[#17a5b4] bg-[#17a5b4]/5"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                }`}
+              >
+                <Icon size={18} className={isActive ? "text-[#17a5b4]" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"} />
+                <span className="font-bold tracking-wide">{tab.label}</span>
+                {isActive && (
+                  <div className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-[#17a5b4] rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Avatar */}
-        <div></div>
+        {/* Theme Toggle & Avatar */}
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 rounded-full bg-[#17a5b4] flex items-center justify-center text-white font-bold text-xs">
+            SA
+          </div>
+        </div>
       </nav>
 
       {/* MAIN PAGE CONTENT */}

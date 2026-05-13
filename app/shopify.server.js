@@ -30,6 +30,34 @@ const shopify = shopifyApp({
     : {}),
 });
 
+// #region agent log
+fetch("http://127.0.0.1:7697/ingest/a18a9cec-7dcc-4b42-a60d-5572eee3fb6a", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Debug-Session-Id": "7041f3",
+  },
+  body: JSON.stringify({
+    sessionId: "7041f3",
+    location: "shopify.server.js:boot",
+    message: "shopifyApp initialized",
+    data: {
+      hasApiKey: Boolean(process.env.SHOPIFY_API_KEY),
+      hasSecret: Boolean(process.env.SHOPIFY_API_SECRET),
+      hasAppUrl: Boolean((process.env.SHOPIFY_APP_URL || "").trim()),
+      appUrlLength: (process.env.SHOPIFY_APP_URL || "").length,
+      usePrismaSessions,
+      hasDatabaseUrl,
+      isProd,
+      scopesDefined: Boolean(process.env.SCOPES),
+    },
+    timestamp: Date.now(),
+    hypothesisId: "H1",
+    runId: "pre-fix",
+  }),
+}).catch(() => {});
+// #endregion
+
 export default shopify;
 export const apiVersion = ApiVersion.October25;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
