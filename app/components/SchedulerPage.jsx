@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useLoaderData, useFetcher, NavLink, useNavigate } from "react-router";
-import { Sparkles, Upload, Zap, Loader2, Target, Wand2, Pencil, Trash2, FileText, CheckCircle2, X } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
+import { Sparkles, Upload, Zap, Loader2, Wand2, Pencil, Trash2, FileText, CheckCircle2, X } from "lucide-react";
 import Papa from "papaparse";
 
 const LS_OPENROUTER = "bloglift_openrouter_key";
@@ -43,7 +43,7 @@ export function SchedulerPage() {
   }, [toast]);
 
   // ── Computed Stats (Real Data) ──────────────────────────────────
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const thisMonthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
@@ -70,13 +70,6 @@ export function SchedulerPage() {
     const rule = rules?.find(r => r.postType === type);
     return rule ? rule.enabled : (type === "seo" || type === "seasonal");
   };
-
-  const tabClass = ({ isActive }) =>
-    `inline-block border-b-2 px-1 py-3 text-sm font-bold transition-all ${
-      isActive
-        ? "border-[#17a5b4] text-[#17a5b4]"
-        : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-    }`;
 
   const openScheduleOnDate = (day, isCurrentMonth) => {
     if (!isCurrentMonth) return;
@@ -120,7 +113,7 @@ export function SchedulerPage() {
       res.push({ day: i, isCurrentMonth: false, events: [] });
     }
     return res;
-  }, [allScheduled]);
+  }, [allScheduled, now]);
 
   const displayDates = useMemo(() => {
     if (view === 'month') return dates;
@@ -225,7 +218,7 @@ export function SchedulerPage() {
                     <div key={day} className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{day}</div>
                   ))}
                   {displayDates.map((date, i) => (
-                    <div key={i} onClick={() => openScheduleOnDate(date.day, date.isCurrentMonth)} className={`group relative min-h-[90px] cursor-pointer rounded-xl border p-2 transition-all ${date.isCurrentMonth ? date.isToday ? 'border-[#17a5b4] bg-[#17a5b4]/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#17a5b4] hover:bg-slate-50 dark:hover:bg-slate-800/50' : 'opacity-20 cursor-default'} ${view === 'week' ? 'min-h-[140px]' : ''}`}>
+                    <div key={i} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openScheduleOnDate(date.day, date.isCurrentMonth); }} onClick={() => openScheduleOnDate(date.day, date.isCurrentMonth)} className={`group relative min-h-[90px] cursor-pointer rounded-xl border p-2 transition-all ${date.isCurrentMonth ? date.isToday ? 'border-[#17a5b4] bg-[#17a5b4]/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#17a5b4] hover:bg-slate-50 dark:hover:bg-slate-800/50' : 'opacity-20 cursor-default'} ${view === 'week' ? 'min-h-[140px]' : ''}`}>
                       <span className={`text-sm font-black ${date.isToday ? 'text-[#17a5b4]' : 'text-slate-700 dark:text-slate-300'}`}>{date.day}</span>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {date.events?.map((evt, idx) => (
@@ -359,8 +352,8 @@ export function SchedulerPage() {
               
               {!editingPost && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Select Draft or Placeholder</label>
-                  <select name="id" value={selectedDraftId} onChange={(e) => {
+                  <label htmlFor="draftSelect" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Select Draft or Placeholder</label>
+                  <select id="draftSelect" name="id" value={selectedDraftId} onChange={(e) => {
                     setSelectedDraftId(e.target.value);
                     setGeneratedTitle("");
                   }} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[#17a5b4]/50 transition-all">
@@ -381,14 +374,14 @@ export function SchedulerPage() {
               {selectedDraftId === "new" && (
                 <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Target Blog</label>
-                    <select name="blogId" required className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none">
+                    <label htmlFor="targetBlogSelect" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Target Blog</label>
+                    <select id="targetBlogSelect" name="blogId" required className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none">
                       {blogs.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Content Title</label>
+                      <label htmlFor="generatedTitleInput" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Content Title</label>
                       <button 
                         type="button"
                         disabled={isGenerating}
@@ -424,6 +417,7 @@ export function SchedulerPage() {
                       </button>
                     </div>
                     <input 
+                      id="generatedTitleInput"
                       type="text" 
                       name="title" 
                       required 
@@ -465,14 +459,14 @@ export function SchedulerPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Publish Date</label>
+                  <label htmlFor="publishDateInput" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Publish Date</label>
                   <div className="relative">
-                    <input type="datetime-local" name="scheduledAt" required defaultValue={selectedDate ? selectedDate.toISOString().slice(0, 16) : ""} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none focus:bg-white dark:focus:bg-slate-900 transition-colors" />
+                    <input id="publishDateInput" type="datetime-local" name="scheduledAt" required defaultValue={selectedDate ? selectedDate.toISOString().slice(0, 16) : ""} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none focus:bg-white dark:focus:bg-slate-900 transition-colors" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Post Type</label>
-                  <select name="postType" defaultValue={editingPost?.postType || "seo"} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none">
+                  <label htmlFor="postTypeSelect" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Post Type</label>
+                  <select id="postTypeSelect" name="postType" defaultValue={editingPost?.postType || "seo"} className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 text-sm font-bold outline-none">
                     <option value="seo">SEO Focus</option>
                     <option value="promo">Promotional</option>
                     <option value="seasonal">Seasonal</option>
@@ -517,7 +511,7 @@ export function SchedulerPage() {
             </div>
             
             <p className="mb-6 text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-              To use AI features, please enter your OpenRouter API key. It's stored safely in your browser.
+              To use AI features, please enter your OpenRouter API key. It&apos;s stored safely in your browser.
             </p>
 
             <div className="space-y-4">

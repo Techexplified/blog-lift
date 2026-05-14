@@ -3,19 +3,12 @@ import {
   X, 
   RefreshCw, 
   Sparkles, 
-  ArrowRight, 
   CheckCircle2, 
   AlertCircle,
   TrendingUp,
-  MousePointer2,
-  DollarSign,
   BarChart3,
-  ExternalLink,
-  ChevronRight,
   Zap,
   Image,
-  ShoppingCart,
-  Trash2,
   Undo2
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -31,8 +24,6 @@ export default function ProductLinkerOverlay({
   shopUrl,
   stats = null
 }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [history, setHistory] = useState([]);
@@ -234,7 +225,7 @@ export default function ProductLinkerOverlay({
           fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
           
           // Find which product matched
-          const matchedGroup = Object.entries(match.groups || {}).find(([k, v]) => v !== undefined);
+          const matchedGroup = Object.entries(match.groups || {}).find(([, v]) => v !== undefined);
           if (matchedGroup) {
             const productIdPart = matchedGroup[0].slice(1);
             const product = sortedProducts.find(p => p.id.replace(/[^a-zA-Z0-9]/g, '') === productIdPart);
@@ -388,7 +379,10 @@ export default function ProductLinkerOverlay({
                     return (
                       <div 
                         key={p.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedProduct(p)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedProduct(p); }}
                         className={`group relative flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition-all ${selectedProduct?.id === p.id ? 'border-[#17a5b4] bg-[#17a5b4]/5 ring-1 ring-[#17a5b4]' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}`}
                       >
                         <div className="h-14 w-14 overflow-hidden rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">

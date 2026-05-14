@@ -19,9 +19,6 @@ import {
   Search,
   MessageSquare,
   Link2,
-  ShoppingCart,
-  TrendingUp,
-  LayoutGrid,
   Undo2,
   Redo2,
   Trash2,
@@ -242,7 +239,6 @@ export default function BlogEditorWorkspace({
   const [isProductLinkerOpen, setIsProductLinkerOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [isSyncingProducts, setIsSyncingProducts] = useState(false);
-  const [unlinkedMentions, setUnlinkedMentions] = useState([]);
 
   const [availableBlogs, setAvailableBlogs] = useState([]);
   const [targetBlogId, setTargetBlogId] = useState("");
@@ -1161,7 +1157,7 @@ export default function BlogEditorWorkspace({
               Delete
             </button>
             <button
-              onClick={() => persistDraft(!published)}
+              onClick={publish}
               disabled={remoteSaving}
               className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-[11px] font-black uppercase tracking-widest text-white shadow-lg transition-all disabled:opacity-50 active:scale-[0.98] ${
                 published
@@ -1170,7 +1166,7 @@ export default function BlogEditorWorkspace({
               }`}
             >
               <Send className="h-3.5 w-3.5" />
-              {published ? "Unpublish" : "Publish"}
+              {published ? "Update Post" : "Publish"}
             </button>
           </div>
         </div>
@@ -1766,7 +1762,7 @@ export default function BlogEditorWorkspace({
                       <OutlinePreviewLines text={genOutlinePreview} />
                     ) : (
                       <p className="text-sm leading-relaxed text-slate-400">
-                        Click &ldquo;Generate outline&rdquo; to preview your post
+                        Click &apos;Generate outline&apos; to preview your post
                         structure, then paste the full article into the editor.
                       </p>
                     )}
